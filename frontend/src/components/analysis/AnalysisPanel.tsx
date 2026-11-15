@@ -23,6 +23,7 @@ import {
   Mountain,
   Check,
   X,
+  AlertTriangle,
 } from "lucide-react";
 
 export default function AnalysisPanel() {
@@ -50,6 +51,13 @@ export default function AnalysisPanel() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const startDateRef = useRef<HTMLInputElement>(null);
   const endDateRef = useRef<HTMLInputElement>(null);
+
+  // Future date and range validation
+  const todayStr = new Date().toISOString().split("T")[0];
+  const isStartDateFuture = Boolean(startDate && startDate > todayStr);
+  const isEndDateFuture = Boolean(endDate && endDate > todayStr);
+  const isFutureDate = isStartDateFuture || isEndDateFuture;
+  const isDateRangeInverted = Boolean(startDate && endDate && startDate > endDate);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -288,11 +296,16 @@ export default function AnalysisPanel() {
               </label>
               <div
                 onClick={() => startDateRef.current?.showPicker?.()}
-                className="flex items-center justify-between bg-space-950 border border-slate-700 hover:border-sky-400 rounded-xl px-3 py-2.5 cursor-pointer transition-colors group shadow-inner"
+                className={`flex items-center justify-between bg-space-950 border rounded-xl px-3 py-2.5 cursor-pointer transition-colors group shadow-inner ${
+                  isStartDateFuture
+                    ? "border-rose-500/80 bg-rose-950/20 text-rose-200"
+                    : "border-slate-700 hover:border-sky-400"
+                }`}
               >
                 <input
                   ref={startDateRef}
                   type="date"
+                  max={todayStr}
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   className="w-full bg-transparent text-sm text-white font-mono focus:outline-none cursor-pointer [color-scheme:dark]"
@@ -309,6 +322,11 @@ export default function AnalysisPanel() {
                   <Calendar className="w-4 h-4" />
                 </button>
               </div>
+              {isStartDateFuture && (
+                <span className="text-[10px] text-rose-400 font-mono mt-1 block">
+                  ⚠ Invalid: Date in the future (&gt; {todayStr})
+                </span>
+              )}
             </div>
 
             <div>
@@ -318,11 +336,16 @@ export default function AnalysisPanel() {
               </label>
               <div
                 onClick={() => endDateRef.current?.showPicker?.()}
-                className="flex items-center justify-between bg-space-950 border border-slate-700 hover:border-sky-400 rounded-xl px-3 py-2.5 cursor-pointer transition-colors group shadow-inner"
+                className={`flex items-center justify-between bg-space-950 border rounded-xl px-3 py-2.5 cursor-pointer transition-colors group shadow-inner ${
+                  isEndDateFuture
+                    ? "border-rose-500/80 bg-rose-950/20 text-rose-200"
+                    : "border-slate-700 hover:border-sky-400"
+                }`}
               >
                 <input
                   ref={endDateRef}
                   type="date"
+                  max={todayStr}
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   className="w-full bg-transparent text-sm text-white font-mono focus:outline-none cursor-pointer [color-scheme:dark]"
@@ -339,8 +362,54 @@ export default function AnalysisPanel() {
                   <Calendar className="w-4 h-4" />
                 </button>
               </div>
+              {isEndDateFuture && (
+                <span className="text-[10px] text-rose-400 font-mono mt-1 block">
+                  ⚠ Invalid: Date in the future (&gt; {todayStr})
+                </span>
+              )}
             </div>
           </div>
+
+          {/* Prominent Future Date Invalid Data Warning */}
+          {isFutureDate && (
+            <div className="mt-3 p-3.5 rounded-xl bg-rose-950/80 border border-rose-500/60 text-xs text-rose-200 flex items-start gap-2.5 shadow-lg animate-in fade-in-0">
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <div className="font-semibold text-rose-300 font-mono uppercase tracking-wider text-[11px] flex items-center gap-2">
+                  <span>INVALID DATA: FUTURE ACQUISITION DATE</span>
+                  <span className="px-1.5 py-0.2 rounded bg-rose-900 border border-rose-600 text-[9px]">ERROR</span>
+                </div>
+                <p className="mt-1 text-rose-200/90 leading-relaxed text-[11px]">
+                  Satellite radar observations cannot be acquired for future dates ({isEndDateFuture ? endDate : startDate} &gt; {todayStr}). Synthetic Aperture Radar (SAR) sensors only record historical and present surface backscatter.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStartDate("2025-11-15");
+                    setEndDate("2025-12-05");
+                    soundController.playPing(880, 0.08);
+                  }}
+                  className="mt-2.5 px-3 py-1 rounded-lg bg-rose-900/60 hover:bg-rose-900 border border-rose-500/60 text-rose-200 font-mono text-[10px] transition-colors cursor-pointer"
+                >
+                  Reset to Valid Historical Dates (Nov 15 – Dec 05, 2025)
+                </button>
+              </div>
+            </div>
+          )}
+
+          {isDateRangeInverted && (
+            <div className="mt-3 p-3 rounded-xl bg-amber-950/80 border border-amber-500/60 text-xs text-amber-200 flex items-start gap-2.5 shadow-lg animate-in fade-in-0">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <div className="font-semibold text-amber-300 font-mono uppercase tracking-wider text-[11px]">
+                  Invalid Date Range: Start Precedes End
+                </div>
+                <p className="mt-0.5 text-amber-200/90 leading-relaxed text-[11px]">
+                  Start search date ({startDate}) must be earlier than or equal to end search date ({endDate}).
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Scientific Explanation Notice */}
@@ -387,18 +456,30 @@ export default function AnalysisPanel() {
         <div className="pt-3">
           <button
             onClick={executeAnalysis}
-            disabled={isAnalyzing || !currentLocationDetail}
-            className={`w-full py-3.5 px-6 rounded-xl text-white font-semibold text-sm tracking-wide transition-all duration-300 flex items-center justify-center gap-2 group cursor-pointer ${
+            disabled={isAnalyzing || !currentLocationDetail || isFutureDate || isDateRangeInverted}
+            className={`w-full py-3.5 px-6 rounded-xl font-semibold text-sm tracking-wide transition-all duration-300 flex items-center justify-center gap-2 group cursor-pointer ${
               !currentLocationDetail
                 ? "bg-slate-800 text-slate-400 border border-slate-700/60 opacity-60 cursor-not-allowed"
-                : "bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 shadow-[0_0_25px_rgba(14,165,233,0.35)] disabled:opacity-50"
+                : isFutureDate
+                ? "bg-rose-950/80 text-rose-300 border border-rose-500/70 opacity-90 cursor-not-allowed shadow-[0_0_20px_rgba(244,63,94,0.2)]"
+                : isDateRangeInverted
+                ? "bg-amber-950/80 text-amber-300 border border-amber-500/60 opacity-90 cursor-not-allowed"
+                : "bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white shadow-[0_0_25px_rgba(14,165,233,0.35)] disabled:opacity-50"
             }`}
           >
-            <Play className="w-4 h-4 fill-white group-hover:scale-110 transition-transform" />
+            {isFutureDate || isDateRangeInverted ? (
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+            ) : (
+              <Play className="w-4 h-4 fill-white group-hover:scale-110 transition-transform" />
+            )}
             <span>
-              {currentLocationDetail
-                ? `ANALYZE NISAR OBSERVATIONS FOR ${currentLocationDetail.name.toUpperCase()}`
-                : "SELECT A CITY / AREA TO ANALYZE"}
+              {!currentLocationDetail
+                ? "SELECT A CITY / AREA TO ANALYZE"
+                : isFutureDate
+                ? "INVALID DATA: FUTURE ACQUISITION DATE"
+                : isDateRangeInverted
+                ? "INVALID DATE RANGE: START > END"
+                : `ANALYZE NISAR OBSERVATIONS FOR ${currentLocationDetail.name.toUpperCase()}`}
             </span>
           </button>
 

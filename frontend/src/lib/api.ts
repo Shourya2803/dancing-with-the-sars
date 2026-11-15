@@ -92,6 +92,36 @@ export class ApiClient {
     payload: AnalysisCreateRequest,
     isMockMode: boolean = false
   ): Promise<AnalysisResponse> {
+    const todayStr = new Date().toISOString().split("T")[0];
+    const isFuture = Boolean(
+      (payload.start_date && payload.start_date > todayStr) ||
+      (payload.end_date && payload.end_date > todayStr)
+    );
+
+    if (isFuture) {
+      const futureDate = payload.start_date > todayStr ? payload.start_date : payload.end_date;
+      return {
+        analysis_id: `invalid-future-${Date.now()}`,
+        status: "insufficient_data",
+        region: payload.region || "Uttarakhand",
+        location: payload.location,
+        location_name: payload.location?.name,
+        district: payload.district || "Chamoli",
+        sector: payload.sector,
+        sector_name: payload.sector_name,
+        analysis_type: payload.analysis_type,
+        requested_period: {
+          start: payload.start_date,
+          end: payload.end_date,
+        },
+        observations_used: [],
+        result: undefined,
+        message: `Invalid Data: Observation date (${futureDate}) is in the future. Satellite radar acquisitions cannot be recorded ahead of time.`,
+        error: `Invalid Data: Future date selected (${futureDate} > ${todayStr}). Earth observation satellites cannot acquire data in the future.`,
+        explanation: "No satellite radar observations can exist for future dates. Please select an observation window on or before today.",
+      };
+    }
+
     if (isMockMode) {
       // Simulate realistic telemetry processing delay
       await new Promise((resolve) => setTimeout(resolve, 2400));

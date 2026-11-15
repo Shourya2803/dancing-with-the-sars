@@ -28,8 +28,12 @@ export default function ResultDashboard() {
   const { analysisResult, setStage, selectedSector, currentLocationDetail, currentDistrictDetail } = useJourney();
   const [activeTab, setActiveTab] = useState<"summary" | "graphs" | "geology" | "technical">("summary");
 
-  // Handle Insufficient Data / Case B, C, D
-  if (analysisResult?.status === "insufficient_data") {
+  // Handle Insufficient Data / Case B, C, D, or Failed / No Result
+  if (
+    analysisResult?.status === "insufficient_data" ||
+    analysisResult?.status === "failed" ||
+    !analysisResult?.result
+  ) {
     return (
       <div className="relative w-full h-full flex items-center justify-center p-4">
         <InsufficientDataView />

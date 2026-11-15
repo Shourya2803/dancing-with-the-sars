@@ -142,6 +142,48 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
       setError("Please select a target city or area first.");
       return;
     }
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    const isFuture = Boolean(
+      (startDate && startDate > todayStr) ||
+      (endDate && endDate > todayStr)
+    );
+
+    if (isFuture) {
+      const futureDate = startDate > todayStr ? startDate : endDate;
+      const invalidResult: AnalysisResponse = {
+        analysis_id: `invalid-future-${Date.now()}`,
+        status: "insufficient_data",
+        region: "Uttarakhand",
+        location: {
+          id: currentLocationDetail.id,
+          name: currentLocationDetail.name,
+          district: currentLocationDetail.district,
+        },
+        location_name: currentLocationDetail.name,
+        district: currentLocationDetail.district,
+        sector: selectedSector.id,
+        sector_name: selectedSector.name,
+        analysis_type: selectedSector.id,
+        requested_period: { start: startDate, end: endDate },
+        observations_used: [],
+        result: undefined,
+        message: `Invalid Data: Observation date (${futureDate}) is in the future. Satellite radar acquisitions cannot be recorded ahead of time.`,
+        error: `Invalid Data: Future acquisition date selected (${futureDate} > ${todayStr}). Earth observation satellites only record historical and present acquisitions.`,
+        explanation: "No satellite radar observations can exist for future dates. Please select an observation window on or before today.",
+      };
+      setAnalysisResult(invalidResult);
+      soundController.playPing(440, 0.2);
+      setIsAnalyzing(false);
+      setStage("result");
+      return;
+    }
+
+    if (startDate && endDate && startDate > endDate) {
+      setError(`Invalid date range: Start date (${startDate}) cannot be after end date (${endDate}).`);
+      return;
+    }
+
     setIsAnalyzing(true);
     setError(null);
     setStage("analyzing");

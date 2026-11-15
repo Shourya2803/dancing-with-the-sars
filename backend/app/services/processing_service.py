@@ -8,6 +8,7 @@ import os
 import tempfile
 import asyncio
 import logging
+from datetime import datetime, date
 from typing import Dict, Any, Optional, Tuple, List
 import numpy as np
 
@@ -57,6 +58,66 @@ class ProcessingService:
         """
         Executes the full scientific analysis pipeline asynchronously.
         """
+        # 0. Validate Requested Observation Dates
+        today = date.today()
+        try:
+            parsed_start = datetime.strptime(start_date[:10], "%Y-%m-%d").date()
+            parsed_end = datetime.strptime(end_date[:10], "%Y-%m-%d").date()
+
+            if parsed_start > today or parsed_end > today:
+                future_date = parsed_start if parsed_start > today else parsed_end
+                err_msg = (
+                    f"Invalid data: Requested observation date '{future_date}' is in the future (today is {today}). "
+                    "Satellite SAR radar observations cannot be acquired for future dates."
+                )
+                self.db_service.update_analysis_status(analysis_id, "insufficient_data", err_msg)
+                return {
+                    "analysis_id": analysis_id,
+                    "status": "insufficient_data",
+                    "case": "future_date_invalid",
+                    "region": region,
+                    "district": district or "Uttarakhand",
+                    "location_name": location_name,
+                    "sector": sector,
+                    "sector_name": sector_name,
+                    "analysis_type": analysis_type,
+                    "requested_period": {"start": start_date, "end": end_date},
+                    "observations_used": [],
+                    "observations_found": 0,
+                    "message": err_msg,
+                    "error": err_msg,
+                    "unsuitable_reasons": ["Selected observation window is in the future. Satellites cannot acquire future data."],
+                    "result": None,
+                    "map": None,
+                    "explanation": "No satellite radar observations can exist for future dates. Please select an observation window on or before today."
+                }
+
+            if parsed_start > parsed_end:
+                err_msg = f"Invalid data: Start date ({start_date}) cannot be after end date ({end_date})."
+                self.db_service.update_analysis_status(analysis_id, "insufficient_data", err_msg)
+                return {
+                    "analysis_id": analysis_id,
+                    "status": "insufficient_data",
+                    "case": "invalid_date_order",
+                    "region": region,
+                    "district": district or "Uttarakhand",
+                    "location_name": location_name,
+                    "sector": sector,
+                    "sector_name": sector_name,
+                    "analysis_type": analysis_type,
+                    "requested_period": {"start": start_date, "end": end_date},
+                    "observations_used": [],
+                    "observations_found": 0,
+                    "message": err_msg,
+                    "error": err_msg,
+                    "unsuitable_reasons": ["Start date is after end date."],
+                    "result": None,
+                    "map": None,
+                    "explanation": "Start date must precede end date. Please adjust your observation window."
+                }
+        except (ValueError, TypeError) as date_err:
+            logger.warning(f"Failed to parse dates {start_date}, {end_date}: {date_err}")
+
         # 1. Resolve and Validate AOI
         aoi_geom = None
         bbox = None
@@ -282,6 +343,16 @@ class ProcessingService:
         end_date: str
     ) -> List[Dict[str, Any]]:
         """Provides verified sample observations for demonstration when offline."""
+        # Never provide demo observations for future dates
+        today = date.today()
+        try:
+            p_start = datetime.strptime(start_date[:10], "%Y-%m-%d").date()
+            p_end = datetime.strptime(end_date[:10], "%Y-%m-%d").date()
+            if p_start > today or p_end > today:
+                return []
+        except Exception:
+            pass
+
         if product_type == "GUNW":
             return [{
                 "granule_id": "NISAR_L2_PR_GUNW_005_106_D_073_006_2000_SH_20251117T133057_20251129T133057",

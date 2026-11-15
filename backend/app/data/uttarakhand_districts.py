@@ -3,7 +3,7 @@ Uttarakhand Administrative Boundaries and District Metadata.
 Contains bounding boxes, centroids, and polygon geometries for all 13 districts of Uttarakhand.
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 UTTARAKHAND_DISTRICTS: Dict[str, Dict[str, Any]] = {
     "chamoli": {
