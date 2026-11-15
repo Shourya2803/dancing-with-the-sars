@@ -16,7 +16,7 @@ EARTH (Procedural 3D Globe with Atmosphere Shader & Himalayan Pin)
   ↓
 INDIA ➔ UTTARAKHAND (Geospatial Transition to EPSG:32644 Domain)
   ↓
-ANALYSIS SECTORS (🏔 Terrain, 🧊 Cryosphere, 🌲 Forest, 🌊 Wetlands)
+ANALYSIS SECTORS (🏔️ Terrain & Surface Change, 🌲 Forest & Canopy Structure)
   ↓
 SCIENTIFIC ANALYSIS (CMR Granule Query & Calibrated Δγ⁰ Log-Ratio)
   ↓
