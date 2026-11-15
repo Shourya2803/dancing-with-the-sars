@@ -712,29 +712,6 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
                 <stop offset="50%" stopColor="#f97316" stopOpacity="0.85" />
                 <stop offset="100%" stopColor="#ea580c" stopOpacity="0.4" />
               </linearGradient>
-
-              {/* High-Definition Unsharp Mask Filter: Keeps terrain razor-sharp and prevents blurring on zoom */}
-              <filter id="crispTerrainFilter" x="-5%" y="-5%" width="110%" height="110%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="0.8" result="softBlur" />
-                <feComposite
-                  in="SourceGraphic"
-                  in2="softBlur"
-                  operator="arithmetic"
-                  k1="0"
-                  k2="2.4"
-                  k3="-1.4"
-                  k4="0"
-                  result="sharpened"
-                />
-                <feColorMatrix
-                  in="sharpened"
-                  type="matrix"
-                  values="1.12 0    0    0 -0.04
-                          0    1.12 0    0 -0.04
-                          0    0    1.12 0 -0.04
-                          0    0    0    1  0"
-                />
-              </filter>
             </defs>
 
             {/* 3D Drop Shadow Underneath State */}
