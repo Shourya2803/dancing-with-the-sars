@@ -41,6 +41,9 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
     selectedDistrict,
     setSelectedDistrict,
     currentDistrictDetail,
+    selectedLocation,
+    setSelectedLocation,
+    currentLocationDetail,
     selectedSector,
     setSelectedSector,
     startDate,
@@ -58,10 +61,9 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
     toggleAudio,
   } = useJourney();
 
-  // Active City / Location (defaults to Joshimath, Chamoli)
-  const [selectedLocationId, setSelectedLocationId] = useState<string>("joshimath");
-  const currentLocation: LocationDetail =
-    UTTARAKHAND_CITIES[selectedLocationId] || UTTARAKHAND_CITIES["joshimath"];
+  // Active City / Location (Single Source of Truth from JourneyContext)
+  const currentLocation: LocationDetail = currentLocationDetail;
+  const selectedLocationId = selectedLocation;
 
   // Dropdown / Popup toggles
   const [isCityDropdownOpen, setIsCityDropdownOpen] = useState<boolean>(false);
@@ -110,11 +112,7 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
   // Handle selecting a city / area
   const handleSelectCity = (city: LocationDetail) => {
     soundController.playPing(880, 0.12);
-    setSelectedLocationId(city.id);
-    const matchingDistrictId = city.district.toLowerCase().replace(/\s+/g, "_");
-    if (UTTARAKHAND_DISTRICTS[matchingDistrictId]) {
-      setSelectedDistrict(matchingDistrictId);
-    }
+    setSelectedLocation(city.id);
     setIsCityDropdownOpen(false);
   };
 
@@ -232,7 +230,7 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
                 <div className="flex items-center justify-between pb-1.5 border-b border-slate-800">
                   <div className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-sky-400" />
-                    <span>Target City / Area (36)</span>
+                    <span>Target City / Area ({allCitiesList.length})</span>
                   </div>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800">
                     Uttarakhand

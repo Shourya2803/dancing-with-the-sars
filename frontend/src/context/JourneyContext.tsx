@@ -121,8 +121,11 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
     UTTARAKHAND_DISTRICTS[districtKey] || UTTARAKHAND_DISTRICTS["chamoli"];
 
   const setSelectedDistrict = (distId: string) => {
-    // When district is selected, find first matching city in that district
+    // When district is selected, find first matching city in that district only if not already in it
     const normDist = distId.toLowerCase().replace(/_/g, " ");
+    if (currentLocationDetail.district.toLowerCase() === normDist) {
+      return;
+    }
     const matchingCity = Object.values(UTTARAKHAND_CITIES).find(
       (c) => c.district.toLowerCase() === normDist || c.id === distId
     );

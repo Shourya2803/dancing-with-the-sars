@@ -58,7 +58,21 @@ class ProcessingService:
         bbox = None
         district_name = None
 
-        if district:
+        if custom_aoi_geojson:
+            try:
+                poly, area_km2 = validate_aoi_geometry(custom_aoi_geojson)
+                aoi_geom = custom_aoi_geojson
+                min_x, min_y, max_x, max_y = poly.bounds
+                bbox = (min_x, min_y, max_x, max_y)
+                if district:
+                    dist_data = get_district_info(district)
+                    district_name = dist_data["name"] if dist_data else district
+                else:
+                    district_name = "Custom AOI"
+            except ValidationError as ve:
+                self.db_service.update_analysis_status(analysis_id, "failed", str(ve))
+                return {"status": "failed", "error": str(ve)}
+        elif district:
             dist_data = get_district_info(district)
             if dist_data:
                 aoi_geom = dist_data["geometry"]
@@ -67,15 +81,6 @@ class ProcessingService:
             else:
                 self.db_service.update_analysis_status(analysis_id, "failed", f"Unknown district: '{district}'.")
                 return {"status": "failed", "error": f"Unknown district: '{district}'."}
-        elif custom_aoi_geojson:
-            try:
-                poly, area_km2 = validate_aoi_geometry(custom_aoi_geojson)
-                aoi_geom = custom_aoi_geojson
-                min_x, min_y, max_x, max_y = poly.bounds
-                bbox = (min_x, min_y, max_x, max_y)
-            except ValidationError as ve:
-                self.db_service.update_analysis_status(analysis_id, "failed", str(ve))
-                return {"status": "failed", "error": str(ve)}
         else:
             # Default to Chamoli if unspecified
             dist_data = UTTARAKHAND_DISTRICTS["chamoli"]

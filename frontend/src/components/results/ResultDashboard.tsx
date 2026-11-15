@@ -6,6 +6,7 @@ import UttarakhandMap from "@/components/map/UttarakhandMap";
 import AIExplanation from "./AIExplanation";
 import TechnicalDetails from "./TechnicalDetails";
 import InsufficientDataView from "./InsufficientDataView";
+import MethodologyModal from "@/components/navigation/MethodologyModal";
 import { soundController } from "@/lib/audio";
 import {
   Sparkles,
@@ -17,11 +18,13 @@ import {
   ShieldCheck,
   Calendar,
   Layers,
+  HelpCircle,
 } from "lucide-react";
 
 export default function ResultDashboard() {
   const { analysisResult, setStage, selectedSector, currentLocationDetail, currentDistrictDetail } = useJourney();
   const [activeTab, setActiveTab] = useState<"summary" | "technical">("summary");
+  const [isMethodologyOpen, setIsMethodologyOpen] = useState(false);
 
   // Handle Insufficient Data / Case B, C, D
   if (analysisResult?.status === "insufficient_data") {
@@ -45,7 +48,7 @@ export default function ResultDashboard() {
         <UttarakhandMap showResultLayer={true} />
 
         {/* Floating Top Scientific Conclusion Banner */}
-        <div className="absolute top-16 left-4 right-4 md:right-auto md:max-w-xl z-20">
+        <div className="absolute top-4 left-4 right-4 md:right-auto md:max-w-xl z-20">
           <div className="p-4 rounded-2xl bg-space-900/90 border border-sky-500/40 backdrop-blur-xl shadow-2xl">
             <div className="flex items-center gap-2 mb-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -118,16 +121,30 @@ export default function ResultDashboard() {
               </button>
             </div>
 
-            <button
-              onClick={() => {
-                soundController.playPing(750, 0.1);
-                setStage("sector_selected");
-              }}
-              className="text-xs text-slate-400 hover:text-sky-300 font-mono flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>New Analysis</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  soundController.playPing(750, 0.08);
+                  setIsMethodologyOpen(true);
+                }}
+                className="text-xs text-slate-400 hover:text-sky-300 font-mono flex items-center gap-1 px-2 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                title="Scientific Methodology"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Methodology</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  soundController.playPing(750, 0.1);
+                  setStage("sector_selected");
+                }}
+                className="text-xs text-slate-400 hover:text-sky-300 font-mono flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>New Analysis</span>
+              </button>
+            </div>
           </div>
 
           {/* Active Tab Content */}
@@ -157,6 +174,11 @@ export default function ResultDashboard() {
           </button>
         </div>
       </div>
+
+      <MethodologyModal
+        isOpen={isMethodologyOpen}
+        onClose={() => setIsMethodologyOpen(false)}
+      />
     </div>
   );
 }

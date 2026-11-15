@@ -69,6 +69,6 @@ export const MOCK_INSUFFICIENT_DATA_RESPONSE: AnalysisResponse = {
     end: "2026-06-05"
   },
   observations_used: [],
-  message: "We could not find enough suitable observations for a reliable comparison in the selected period. Try expanding the date range to match NISAR's 12-day repeat orbit schedule (Track 106) or selecting another area.",
-  error: "INSUFFICIENT_OBSERVATIONS: Zero matching granules found on Track 106 within requested 4-day span. NISAR requires at least two temporal repeat passes separated by multiples of 12 days."
+  message: "We could not find enough suitable observations for a reliable comparison in the selected period. Try expanding the date range to encompass additional satellite acquisitions or selecting another area.",
+  error: "INSUFFICIENT_OBSERVATIONS: Zero matching granules found on Track 106 within requested span. Radar change analysis requires at least two temporal repeat passes."
 };

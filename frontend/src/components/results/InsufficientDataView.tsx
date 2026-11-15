@@ -10,7 +10,7 @@ export default function InsufficientDataView() {
 
   const handleExpandDates = () => {
     soundController.playPing(750, 0.1);
-    // Expand to verified 12-day repeat orbit pair
+    // Expand date search window
     setStartDate("2025-11-15");
     setEndDate("2025-12-05");
     setStage("sector_selected");

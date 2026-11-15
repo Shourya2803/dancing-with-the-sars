@@ -91,7 +91,7 @@ export default function HomePage() {
 
       {/* 6. Active Telemetry Analysis Stage */}
       {stage === "analyzing" && (
-        <div className="relative w-full h-full flex items-center justify-center pt-16 px-4">
+        <div className="relative w-full h-full flex items-center justify-center px-4">
           <div className="absolute inset-0 z-0 opacity-25 blur-sm">
             <UttarakhandMap showResultLayer={false} />
           </div>
@@ -103,7 +103,7 @@ export default function HomePage() {
 
       {/* 7. Final Scientific Result Experience */}
       {stage === "result" && (
-        <div className="relative w-full h-full pt-16">
+        <div className="relative w-full h-full">
           <ResultDashboard />
         </div>
       )}
