@@ -1,0 +1,36 @@
+# Environments
+.env
+.env*.local
+venv/
+ENV/
+env/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Local data and artifacts
+storage/
+cache/
+backend/storage/
+backend/app/cache/
+*.tif
+*.tiff
+
+# Node.js / Next.js
+node_modules/
+frontend/node_modules/
+.next/
+frontend/.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+.DS_Store
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
