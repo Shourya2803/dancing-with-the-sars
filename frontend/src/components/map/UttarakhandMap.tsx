@@ -438,10 +438,7 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
             className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-space-950/80 hover:bg-space-900 border border-slate-700/70 hover:border-sky-400 text-slate-200 hover:text-white text-xs font-mono transition-all shadow-lg cursor-pointer"
           >
             <Sliders className="w-3.5 h-3.5 text-sky-400" />
-            <span className="hidden sm:inline">SAR Telemetry & Window</span>
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-indigo-950 text-indigo-300 border border-indigo-800">
-              12-Day Cycle
-            </span>
+            <span>SAR Telemetry & Window</span>
           </button>
         </div>
 

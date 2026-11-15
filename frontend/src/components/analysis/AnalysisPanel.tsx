@@ -302,9 +302,8 @@ export default function AnalysisPanel() {
             <span>Search Constraint UX Principle</span>
           </div>
           <p className="leading-relaxed">
-            The selected dates define your requested search range. NISAR observations
-            occur along scheduled 12-day orbital repeat cycles. The scientific backend
-            discovers matching repeat passes on Track 106 and compares valid temporal pairs.
+            The selected dates define your requested search range. The scientific backend
+            discovers matching satellite radar acquisitions over the selected area and compares valid temporal pairs.
           </p>
         </div>
 
@@ -317,7 +316,7 @@ export default function AnalysisPanel() {
           <div className="grid grid-cols-3 gap-2 text-xs font-mono">
             {[
               { id: "first_vs_last", label: "First vs Last", desc: "Longest baseline" },
-              { id: "sequential", label: "Sequential", desc: "Adjacent 12-day pairs" },
+              { id: "sequential", label: "Sequential", desc: "Adjacent temporal pairs" },
               { id: "all_pairs", label: "All Pairs", desc: "Complete matrix" },
             ].map((strategy) => (
               <button

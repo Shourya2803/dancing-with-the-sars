@@ -42,9 +42,8 @@ export default function InsufficientDataView() {
           <span>Why does this happen?</span>
         </div>
         <p className="text-slate-400 leading-relaxed">
-          NISAR operates on a strict 12-day orbital repeat cycle (Track 106 for
-          Uttarakhand). A valid temporal change analysis requires at least two
-          observations on the same flight track, frame, and look direction.
+          A valid temporal change analysis requires at least two suitable satellite radar
+          observations over the target area on matching flight geometry and look direction.
         </p>
         {analysisResult?.error && (
           <div className="p-2 rounded bg-amber-950/30 border border-amber-900/50 text-amber-200/90 text-[11px] break-words">
@@ -60,7 +59,7 @@ export default function InsufficientDataView() {
           className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs tracking-wide transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-lg"
         >
           <Calendar className="w-4 h-4" />
-          <span>EXPAND TO 12-DAY ORBIT PAIR</span>
+          <span>EXPAND DATE RANGE</span>
         </button>
         <button
           onClick={() => setStage("sector_selected")}

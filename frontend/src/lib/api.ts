@@ -95,23 +95,6 @@ export class ApiClient {
     if (isMockMode) {
       // Simulate realistic telemetry processing delay
       await new Promise((resolve) => setTimeout(resolve, 2400));
-      // If user selected dates that are too short (< 12 days), simulate honest insufficient_data
-      const startDate = new Date(payload.start_date);
-      const endDate = new Date(payload.end_date);
-      const diffDays = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
-
-      if (diffDays < 12) {
-        return {
-          ...MOCK_INSUFFICIENT_DATA_RESPONSE,
-          location: payload.location,
-          location_name: payload.location?.name,
-          district: payload.district || "Chamoli",
-          requested_period: {
-            start: payload.start_date,
-            end: payload.end_date,
-          },
-        };
-      }
 
       return {
         ...MOCK_ANALYSIS_CHAMOLI_SURFACE,

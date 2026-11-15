@@ -60,7 +60,7 @@ export default function ResultDashboard() {
               Measurable radar-derived change detected in {locationName} ({currentLocationDetail.district}, Uttarakhand).
             </h1>
             <p className="text-xs text-slate-300 mt-1 font-mono">
-              Sector: {selectedSector.name} • 12-day NISAR Repeat Pass • Elevation: {currentLocationDetail.elevation_m.toLocaleString()}m
+              Sector: {selectedSector.name} • Elevation: {currentLocationDetail.elevation_m.toLocaleString()}m
             </p>
           </div>
         </div>

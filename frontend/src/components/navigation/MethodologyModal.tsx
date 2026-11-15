@@ -48,7 +48,7 @@ export default function MethodologyModal({ isOpen, onClose }: MethodologyModalPr
               The <strong>NASA-ISRO Synthetic Aperture Radar (NISAR)</strong> is a joint
               Earth observation mission by NASA and ISRO utilizing dual-frequency L-band
               (1.26 GHz) and S-band (3.2 GHz) radar to systematically measure changes on
-              Earth&apos;s dynamic surface every 12 days.
+              Earth&apos;s dynamic surface with high spatial and temporal resolution.
             </p>
             <p className="text-slate-300">
               Unlike optical satellites, SAR can penetrate clouds, fog, and darkness,
