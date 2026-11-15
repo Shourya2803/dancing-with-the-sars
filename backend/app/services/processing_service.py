@@ -264,7 +264,26 @@ class ProcessingService:
                 "sector": sector or analysis_type,
                 "sector_name": sector_name,
                 "start_date": start_date,
-                "end_date": end_date
+                "end_date": end_date,
+                "observations_used": [
+                    {
+                        "granule_id": base_obs.get("granule_id"),
+                        "time": base_obs.get("time_start"),
+                        "track": base_obs.get("track"),
+                        "frame": base_obs.get("frame"),
+                        "flight_direction": base_obs.get("flight_direction", "Descending")
+                    },
+                    {
+                        "granule_id": sec_obs.get("granule_id"),
+                        "time": sec_obs.get("time_start"),
+                        "track": sec_obs.get("track"),
+                        "frame": sec_obs.get("frame"),
+                        "flight_direction": sec_obs.get("flight_direction", "Descending")
+                    }
+                ],
+                "processor": sci_output.get("processor", "NISAR Level-2 GCOV (RTC Backscatter)"),
+                "spatial_reference": sci_output.get("spatial_reference", "EPSG:32644"),
+                "pixel_resolution_m": sci_output.get("pixel_resolution_m", [20.0, 20.0])
             }
             metrics = sci_output.get("metrics", {})
             explanation = await self.gemini_service.generate_explanation(
