@@ -7,7 +7,11 @@ Search -> Evaluation -> Scientific Processing -> R2 Storage -> Supabase Persiste
 import os
 import tempfile
 import asyncio
+import logging
 from typing import Dict, Any, Optional, Tuple, List
+import numpy as np
+
+logger = logging.getLogger(__name__)
 
 from app.scientific.validation import validate_aoi_geometry, ValidationError
 from app.scientific.gcov_processor import GCOVProcessor, GCOVProcessingError
@@ -133,7 +137,13 @@ class ProcessingService:
         base_obs, sec_obs = eval_result.selected_pairs[0]
 
         # 4. Acquire Data Files (local cache or generated synthetic data for verified offline processing)
-        p1, p2 = self._resolve_local_product_files(base_obs, sec_obs, product_req)
+        p1, p2 = self._resolve_local_product_files(
+            base_obs=base_obs,
+            sec_obs=sec_obs,
+            product_type=product_req,
+            aoi_geojson=aoi_geom,
+            district_name=district_name
+        )
 
         # 5. Scientific Processing
         with tempfile.TemporaryDirectory() as proc_tmp_dir:
@@ -295,9 +305,11 @@ class ProcessingService:
         self,
         base_obs: Dict[str, Any],
         sec_obs: Dict[str, Any],
-        product_type: str
+        product_type: str,
+        aoi_geojson: Optional[Dict[str, Any]] = None,
+        district_name: Optional[str] = None
     ) -> Tuple[str, str]:
-        """Resolves local data files for processing."""
+        """Resolves local data files for processing, dynamically sizing to match the target AOI."""
         from scripts.generate_sample_nisar_h5 import create_sample_gcov_h5, create_sample_gunw_h5
 
         cache_dir = settings.DATA_CACHE_DIR
@@ -306,16 +318,74 @@ class ProcessingService:
         id1 = base_obs.get("granule_id", "obs1")
         id2 = sec_obs.get("granule_id", "obs2")
 
-        p1 = os.path.join(cache_dir, f"{id1}.h5")
-        p2 = os.path.join(cache_dir, f"{id2}.h5")
+        # Default fallback coordinates centered on Chamoli
+        origin_x = 350000.0
+        origin_y = 3380000.0
+        grid_shape = (256, 256)
+        pixel_spacing = 80.0
+        loc_suffix = (district_name or "default").lower().replace(" ", "_")
+
+        # Dynamically compute UTM 44N (EPSG:32644) grid extent from requested AOI geometry
+        if aoi_geojson:
+            try:
+                from rasterio.warp import transform_geom
+                from shapely.geometry import shape
+
+                reprojected = transform_geom("EPSG:4326", "EPSG:32644", aoi_geojson)
+                aoi_poly = shape(reprojected)
+                min_x, min_y, max_x, max_y = aoi_poly.bounds
+                pad = 4000.0  # 4 km padding around target AOI
+                pad_min_x = min_x - pad
+                pad_max_x = max_x + pad
+                pad_min_y = min_y - pad
+                pad_max_y = max_y + pad
+
+                cols = max(64, int(np.ceil((pad_max_x - pad_min_x) / pixel_spacing)))
+                rows = max(64, int(np.ceil((pad_max_y - pad_min_y) / pixel_spacing)))
+
+                # Cap maximum grid dimensions to keep offline processing fast
+                if cols > 384 or rows > 384:
+                    scale = max(cols / 384.0, rows / 384.0)
+                    pixel_spacing *= scale
+                    cols = int(np.ceil((pad_max_x - pad_min_x) / pixel_spacing))
+                    rows = int(np.ceil((pad_max_y - pad_min_y) / pixel_spacing))
+
+                origin_x = float(pad_min_x)
+                origin_y = float(pad_max_y)
+                grid_shape = (rows, cols)
+            except Exception as e:
+                logger.warning(f"Could not calculate dynamic AOI bounds: {e}")
+
+        p1 = os.path.join(cache_dir, f"{id1}_{loc_suffix}.h5")
+        p2 = os.path.join(cache_dir, f"{id2}_{loc_suffix}.h5")
+
+        center_r = grid_shape[0] // 2
+        center_c = grid_shape[1] // 2
 
         if product_type == "GUNW":
             if not os.path.exists(p1):
-                create_sample_gunw_h5(p1, id1, displacement_feature=True)
+                create_sample_gunw_h5(
+                    p1, id1,
+                    origin_x=origin_x, origin_y=origin_y,
+                    grid_shape=grid_shape, pixel_spacing=pixel_spacing,
+                    displacement_feature=True,
+                    feature_center=(center_r, center_c)
+                )
             return p1, p1
         else:
             if not os.path.exists(p1):
-                create_sample_gcov_h5(p1, id1, change_feature=False)
+                create_sample_gcov_h5(
+                    p1, id1,
+                    origin_x=origin_x, origin_y=origin_y,
+                    grid_shape=grid_shape, pixel_spacing=pixel_spacing,
+                    change_feature=False
+                )
             if not os.path.exists(p2):
-                create_sample_gcov_h5(p2, id2, change_feature=True, feature_delta_db=-5.5)
+                create_sample_gcov_h5(
+                    p2, id2,
+                    origin_x=origin_x, origin_y=origin_y,
+                    grid_shape=grid_shape, pixel_spacing=pixel_spacing,
+                    change_feature=True, feature_delta_db=-5.5,
+                    feature_center=(center_r, center_c)
+                )
             return p1, p2

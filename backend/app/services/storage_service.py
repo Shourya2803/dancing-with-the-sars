@@ -86,8 +86,8 @@ class StorageService:
                     "object_key": object_key,
                     "url": url
                 }
-            except ClientError as e:
-                # If R2 upload fails, fall back to local storage
+            except Exception as e:
+                # If R2 upload fails (e.g. invalid credentials or network), fall back to local storage
                 print(f"[StorageService Warning] R2 upload failed ({str(e)}), falling back to local storage.")
 
         # Local storage fallback
