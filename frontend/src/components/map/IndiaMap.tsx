@@ -75,12 +75,23 @@ export default function IndiaMap() {
       onWheel={handleWheel}
       style={{ cursor: isDragging ? "grabbing" : "grab" }}
     >
-      {/* 1. DEEP SPACE BACKDROP */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-900/60 via-space-950 to-black pointer-events-none" />
+      {/* 1. SOFTLY BLURRED EARTH GLOBE & SURROUNDING COUNTRIES IN BACKGROUND */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <img
+          src="/globe_background_blur.jpg"
+          alt="Earth Globe Background"
+          className="w-full h-full object-cover object-center opacity-60 scale-105 filter blur-[6px] contrast-110 brightness-90 transition-transform duration-1000 ease-out"
+          style={{
+            transform: `translate(${panOffset.x * 0.12}px, ${panOffset.y * 0.12}px) scale(${1 + (zoomLevel - 1) * 0.1})`,
+          }}
+        />
+        {/* Soft cosmic dark gradient vignette overlay to focus eye on India */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_25%,rgba(2,6,23,0.65)_75%,rgba(0,0,0,0.92)_100%)] pointer-events-none" />
+      </div>
 
       {/* Atmospheric Cloud Entry Mist (dissolves on arrival) */}
       <div
-        className={`absolute inset-0 bg-sky-900/20 backdrop-blur-sm pointer-events-none transition-opacity duration-1000 ${
+        className={`absolute inset-0 bg-sky-900/15 backdrop-blur-sm pointer-events-none transition-opacity duration-1000 ${
           entryAnimated ? "opacity-0" : "opacity-100"
         }`}
       />
@@ -145,15 +156,15 @@ export default function IndiaMap() {
             {/* 3D Drop Shadow Underneath the Relief Model */}
             <ellipse cx="650" cy="1160" rx="380" ry="90" fill="url(#reliefShadow)" opacity="0.8" />
 
-            {/* REALISTIC 3D TOPOGRAPHIC RELIEF MAP OF INDIA */}
+            {/* REALISTIC 3D TOPOGRAPHIC RELIEF MAP OF INDIA WITH RADIANT BLUE GLOWING BORDER */}
             <image
-              href="/india_3d_relief_hd.png"
+              href="/india_3d_relief_glowing.png"
               x="0"
               y="0"
               width="1524"
               height="1335"
               preserveAspectRatio="xMidYMid meet"
-              className="pointer-events-none"
+              className="pointer-events-none filter-[drop-shadow(0_0_18px_rgba(56,189,248,0.7))_drop-shadow(0_0_36px_rgba(2,132,199,0.45))]"
             />
 
             {/* UTTARAKHAND STATE BORDER & ACTIVE RADAR BEACON (EXACT ACCORDING TO MAP) */}
