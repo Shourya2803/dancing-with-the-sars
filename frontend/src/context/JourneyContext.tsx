@@ -179,7 +179,7 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
     } catch (err: any) {
       setIsAnalyzing(false);
       setError(err?.message || "Failed to execute scientific analysis.");
-      setStage("sector_selected");
+      setStage("uttarakhand");
     }
   };
 

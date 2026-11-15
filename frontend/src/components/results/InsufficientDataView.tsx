@@ -13,7 +13,7 @@ export default function InsufficientDataView() {
     // Expand date search window
     setStartDate("2025-11-15");
     setEndDate("2025-12-05");
-    setStage("sector_selected");
+    setStage("uttarakhand");
   };
 
   return (
@@ -62,7 +62,7 @@ export default function InsufficientDataView() {
           <span>EXPAND DATE RANGE</span>
         </button>
         <button
-          onClick={() => setStage("sector_selected")}
+          onClick={() => setStage("uttarakhand")}
           className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs tracking-wide transition-colors flex items-center justify-center gap-2 border border-slate-700 cursor-pointer"
         >
           <RotateCcw className="w-4 h-4" />

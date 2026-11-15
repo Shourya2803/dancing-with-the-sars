@@ -439,39 +439,6 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
             <span>SAR Telemetry & Window</span>
           </button>
         </div>
-
-        {/* Right Section: Orbit Status & Utility Controls */}
-        <div className="flex items-center gap-3">
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-xl bg-space-950/80 border border-indigo-500/30 text-indigo-300 text-[11px] font-mono">
-            <Satellite className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Track {currentLocation.default_nisar_track} • Frame 0{currentLocation.default_nisar_frame}</span>
-          </div>
-
-          {/* Audio toggle */}
-          <button
-            onClick={toggleAudio}
-            className="p-2 rounded-xl bg-space-950/80 border border-slate-700/60 hover:border-sky-500/40 text-slate-400 hover:text-white transition-all cursor-pointer"
-            title={isMuted ? "Unmute sound" : "Mute sound"}
-          >
-            {!isMuted ? (
-              <Volume2 className="w-4 h-4 text-sky-400 animate-pulse" />
-            ) : (
-              <VolumeX className="w-4 h-4" />
-            )}
-          </button>
-
-          {/* Mock mode toggle */}
-          <button
-            onClick={toggleMockMode}
-            className={`px-2.5 py-1 rounded-xl border text-[10px] font-mono transition-all cursor-pointer ${
-              isMockMode
-                ? "bg-amber-950/80 border-amber-500/60 text-amber-300"
-                : "bg-emerald-950/80 border-emerald-500/60 text-emerald-300"
-            }`}
-          >
-            {isMockMode ? "Mock Mode" : "API Live"}
-          </button>
-        </div>
       </header>
 
       {/* =========================================================================

@@ -137,7 +137,7 @@ export default function ResultDashboard() {
               <button
                 onClick={() => {
                   soundController.playPing(750, 0.1);
-                  setStage("sector_selected");
+                  setStage("uttarakhand");
                 }}
                 className="text-xs text-slate-400 hover:text-sky-300 font-mono flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
               >
