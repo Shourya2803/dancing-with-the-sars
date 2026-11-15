@@ -306,6 +306,38 @@ Google Gemini (via the `google-genai` SDK) is strictly restricted to a **plain-l
 
 ## 10. API Reference
 
+### End-to-End Execution Sequence Flowchart
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as User / Client UI
+    participant API as FastAPI Backend (:8080)
+    participant CMR as NASA Earthdata CMR
+    participant Sci as Scientific Compute (H5/RTC)
+    participant R2 as Cloudflare R2 Storage
+    participant DB as Supabase PostGIS
+    participant AI as Google Gemini 3.5
+
+    User->>API: POST /api/v1/analyses (AOI, Dates, Sector)
+    API->>API: Validate AOI BBox & Non-Future Dates
+    API->>CMR: Search NISAR Granules (Spatial Intersect)
+    CMR-->>API: Return Granule Metadata
+    API->>API: Evaluate Orbital Geometry (Track 106, Frame 74)
+    alt Window < 12 Days or Conflicting Tracks (Cases B, C, D)
+        API->>DB: Record Status: insufficient_data
+        API-->>User: 200 OK (status: insufficient_data, explanation)
+    else Valid Repeat Pair (Case A)
+        API->>Sci: Windowed Stream HDF5 & Compute Δγ⁰ Log-Ratio
+        Sci->>Sci: Apply ±3.0 dB Thresholds & Calculate Area (km²)
+        Sci->>R2: Upload GeoTIFF & Vector GeoJSON
+        Sci->>AI: Send Statistical Moments & Sector Prompt
+        AI-->>API: Return Constrained Scientific Interpretation
+        API->>DB: Persist Analysis Results & Metrics
+        API-->>User: 200 OK (status: completed, metrics, map URLs, explanation)
+    end
+```
+
 ### Health & Diagnostics
 * `GET /health` — Service health, storage provider status, Supabase connection, and CMR endpoint diagnostics.
 
