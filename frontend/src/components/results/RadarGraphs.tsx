@@ -10,7 +10,7 @@ interface RadarGraphsProps {
 }
 
 export default function RadarGraphs({ analysis, sectorId }: RadarGraphsProps) {
-  const [activeChart, setActiveChart] = useState<"histogram" | "donut" | "quantiles">("histogram");
+  const [activeChart, setActiveChart] = useState<"histogram" | "donut">("histogram");
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
 
   const activeSectorId = sectorId || (analysis as any).analysis_type || (analysis as any).sector || "terrain_surface";
@@ -232,16 +232,6 @@ export default function RadarGraphs({ analysis, sectorId }: RadarGraphsProps) {
           >
             Area Split
           </button>
-          <button
-            onClick={() => setActiveChart("quantiles")}
-            className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
-              activeChart === "quantiles"
-                ? "bg-sky-500/20 text-sky-300 border border-sky-500/40 font-semibold"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            Quantiles
-          </button>
         </div>
       </div>
 
@@ -449,60 +439,6 @@ export default function RadarGraphs({ analysis, sectorId }: RadarGraphsProps) {
                 <span className="text-sky-300 font-bold">
                   {dist.stable?.area_km2?.toFixed(1) || "2952.4"} km² ({stablePct.toFixed(1)}%)
                 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================================
-          VIEW 3: QUANTILES & 5-POINT SUMMARY
-          ========================================================================= */}
-      {activeChart === "quantiles" && (
-        <div className="space-y-3">
-          <div className="p-3 rounded-xl bg-space-950/90 border border-slate-800 space-y-3">
-            <div className="text-[11px] font-mono text-slate-400 flex items-center justify-between">
-              <span>{sectorConfig.metricChannel} Quantile Strip</span>
-              <span className="text-sky-300">UTM 44N Calibrated</span>
-            </div>
-
-            {/* Percentile Range Strip */}
-            <div className="relative h-10 w-full bg-slate-900 rounded-lg flex items-center px-4 overflow-hidden border border-slate-800">
-              {/* IQR Bar (p25 to p75) */}
-              <div
-                className="absolute h-5 bg-sky-500/40 border border-sky-400/80 rounded"
-                style={{ left: "32%", width: "42%" }}
-              />
-              {/* Median Line */}
-              <div
-                className="absolute h-7 w-0.5 bg-amber-400 z-10 shadow-[0_0_8px_#f59e0b]"
-                style={{ left: "52%" }}
-              />
-              {/* Whisker P10 to P90 */}
-              <div className="absolute h-0.5 bg-slate-400" style={{ left: "18%", width: "70%" }} />
-            </div>
-
-            {/* Value Tiles */}
-            <div className="grid grid-cols-5 gap-1.5 text-center font-mono">
-              <div className="p-2 rounded bg-space-900 border border-slate-800">
-                <div className="text-[9px] text-slate-500">P10</div>
-                <div className="text-xs font-bold text-slate-300">{stats.p10_db?.toFixed(2)} dB</div>
-              </div>
-              <div className="p-2 rounded bg-space-900 border border-slate-800">
-                <div className="text-[9px] text-slate-500">P25 (Q1)</div>
-                <div className="text-xs font-bold text-sky-400">{stats.p25_db?.toFixed(2)} dB</div>
-              </div>
-              <div className="p-2 rounded bg-space-900 border border-amber-500/30">
-                <div className="text-[9px] text-amber-400 font-bold">MEDIAN</div>
-                <div className="text-xs font-bold text-amber-300">{stats.median_db?.toFixed(2)} dB</div>
-              </div>
-              <div className="p-2 rounded bg-space-900 border border-slate-800">
-                <div className="text-[9px] text-slate-500">P75 (Q3)</div>
-                <div className="text-xs font-bold text-sky-400">{stats.p75_db?.toFixed(2)} dB</div>
-              </div>
-              <div className="p-2 rounded bg-space-900 border border-slate-800">
-                <div className="text-[9px] text-slate-500">P90</div>
-                <div className="text-xs font-bold text-slate-300">{stats.p90_db?.toFixed(2)} dB</div>
               </div>
             </div>
           </div>

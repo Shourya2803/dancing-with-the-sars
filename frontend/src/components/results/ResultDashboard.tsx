@@ -8,7 +8,6 @@ import AIExplanation from "./AIExplanation";
 import TechnicalDetails from "./TechnicalDetails";
 import InsufficientDataView from "./InsufficientDataView";
 import RadarGraphs from "./RadarGraphs";
-import Geological3DBlock from "./Geological3DBlock";
 import { soundController } from "@/lib/audio";
 import {
   Sparkles,
@@ -18,7 +17,6 @@ import {
   FileText,
   BarChart2,
   BarChart3,
-  Box,
   ShieldCheck,
   Calendar,
   Layers,
@@ -26,7 +24,7 @@ import {
 
 export default function ResultDashboard() {
   const { analysisResult, setStage, selectedSector, currentLocationDetail, currentDistrictDetail } = useJourney();
-  const [activeTab, setActiveTab] = useState<"summary" | "graphs" | "geology" | "technical">("summary");
+  const [activeTab, setActiveTab] = useState<"summary" | "graphs" | "technical">("summary");
 
   // Handle Insufficient Data / Case B, C, D, or Failed / No Result
   if (
@@ -111,18 +109,8 @@ export default function ResultDashboard() {
             </div>
           </div>
 
-          {/* Quick Visualization Switchers */}
+          {/* Quick Visualization Switcher */}
           <div className="flex items-center gap-1.5 pointer-events-auto">
-            <button
-              onClick={() => {
-                soundController.playPing(880, 0.05);
-                setActiveTab("geology");
-              }}
-              className="px-3 py-2.5 rounded-xl bg-space-900/95 border border-sky-500/40 hover:border-sky-400 text-sky-300 hover:text-white backdrop-blur-md shadow-xl text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer"
-            >
-              <Box className="w-3.5 h-3.5 text-amber-400" />
-              <span>3D Geology</span>
-            </button>
             <button
               onClick={() => {
                 soundController.playPing(880, 0.05);
@@ -176,21 +164,6 @@ export default function ResultDashboard() {
               <button
                 onClick={() => {
                   soundController.playPing(880, 0.05);
-                  setActiveTab("geology");
-                }}
-                className={`px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
-                  activeTab === "geology"
-                    ? "bg-sky-500/20 text-sky-300 border border-sky-500/40 font-semibold"
-                    : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                <Box className="w-3 h-3" />
-                <span>3D Geology</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  soundController.playPing(880, 0.05);
                   setActiveTab("technical");
                 }}
                 className={`px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
@@ -228,10 +201,6 @@ export default function ResultDashboard() {
 
           {activeTab === "graphs" && analysisResult && (
             <RadarGraphs analysis={analysisResult} sectorId={activeSector.id} />
-          )}
-
-          {activeTab === "geology" && (
-            <Geological3DBlock sectorId={activeSector.id} locationName={locationName} />
           )}
 
           {activeTab === "technical" && analysisResult && (

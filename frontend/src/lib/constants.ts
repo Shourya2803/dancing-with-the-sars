@@ -267,19 +267,6 @@ export const ANALYSIS_SECTORS: AnalysisSector[] = [
     scientificMethod: "Cross-pol ratio differential (Δγ⁰_HV) reflecting volume scattering change",
     isBackendSupported: true,
     statusBadge: "VERIFIED"
-  },
-  {
-    id: "water_wetlands",
-    name: "Hydrology & Inundation",
-    code: "HYDRO-SAR",
-    analysisType: "water_wetlands",
-    icon: "🌊",
-    subtitle: "Specular Reflectance & Surface Water",
-    description: "Detects standing water accumulation, river expansion, or reservoir level fluctuations through specular radar deflection.",
-    verifiedProduct: "NISAR Level-2 GCOV",
-    scientificMethod: "Specular scattering threshold (Δγ⁰ ≤ -3.0 dB sharp backscatter drop)",
-    isBackendSupported: true,
-    statusBadge: "VERIFIED"
   }
 ];
 

@@ -103,8 +103,8 @@ export default function AnalysisPanel() {
           </span>
         </div>
 
-        {/* 3 Active Sectors Selector */}
-        <div className="grid grid-cols-3 gap-2">
+        {/* Active Sectors Selector */}
+        <div className="grid grid-cols-2 gap-3">
           {ANALYSIS_SECTORS.map((sec) => {
             const isSelected = selectedSector.id === sec.id;
             return (

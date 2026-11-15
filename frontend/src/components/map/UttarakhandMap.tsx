@@ -50,16 +50,16 @@ interface HimalayanSummit {
 }
 
 const HIMALAYAN_SUMMITS: HimalayanSummit[] = [
-  { name: "Nanda Devi", alt: "7,816m", x: 945, y: 555, size: 28, major: true },
+  { name: "Nanda Devi", alt: "7,816m", x: 955, y: 565, size: 28, major: true },
   { name: "Kamet", alt: "7,756m", x: 915, y: 415, size: 26, major: true },
-  { name: "Trishul", alt: "7,120m", x: 915, y: 605, size: 24, major: true },
-  { name: "Chaukhamba", alt: "7,138m", x: 795, y: 505, size: 24, major: true },
-  { name: "Kedarnath Peak", alt: "6,940m", x: 745, y: 520, size: 22, major: true },
-  { name: "Nilkantha / Badrinath", alt: "6,596m", x: 870, y: 505, size: 22, major: true },
+  { name: "Trishul", alt: "7,120m", x: 900, y: 625, size: 24, major: true },
+  { name: "Chaukhamba", alt: "7,138m", x: 805, y: 475, size: 24, major: true },
+  { name: "Kedarnath Peak", alt: "6,940m", x: 740, y: 515, size: 22, major: true },
+  { name: "Nilkantha", alt: "6,596m", x: 865, y: 495, size: 22, major: true },
   { name: "Panchachuli", alt: "6,904m", x: 1115, y: 645, size: 22, major: true },
   { name: "Bandarpoonch", alt: "6,316m", x: 565, y: 450, size: 20, major: false },
-  { name: "Dunagiri", alt: "7,066m", x: 935, y: 535, size: 20, major: false },
-  { name: "Shivling", alt: "6,543m", x: 730, y: 495, size: 19, major: false },
+  { name: "Dunagiri", alt: "7,066m", x: 920, y: 505, size: 20, major: false },
+  { name: "Shivling", alt: "6,543m", x: 725, y: 475, size: 19, major: false },
 ];
 
 export default function UttarakhandMap({ showResultLayer = false }: UttarakhandMapProps) {
@@ -655,6 +655,9 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
                 }deg) rotateY(${mouseTilt.x * 6}deg)`
               : `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
             transformOrigin: "center center",
+            willChange: "transform",
+            backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden",
             transition: isDragging
               ? "none"
               : "transform 900ms cubic-bezier(0.16, 1, 0.3, 1)",
@@ -662,7 +665,11 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
         >
           <svg
             viewBox="0 0 1470 1230"
-            className="w-full h-full max-h-[85vh] filter-[drop-shadow(0_25px_50px_rgba(0,0,0,0.95))] select-none"
+            className="w-full h-full max-h-[85vh] select-none"
+            style={{
+              shapeRendering: "geometricPrecision",
+              textRendering: "geometricPrecision",
+            }}
           >
             <defs>
               {/* Luminous Glow for Active Location Reticle */}
@@ -815,8 +822,8 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
             )}
 
             {/* =========================================================================
-                AUTHENTIC TOPOGRAPHIC RELIEF MAP OF UTTARAKHAND
-                Filtered with Unsharp Mask to eliminate raster blurring on zoom!
+                AUTHENTIC HIGH-RESOLUTION TOPOGRAPHIC RELIEF MAP OF UTTARAKHAND
+                Native Ultra-HD 2940x2460 resolution prevents raster blurring on zoom
                 ========================================================================= */}
             <image
               href="/uttarakhand_physical_map_glowing.png"
@@ -825,7 +832,6 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
               width="1470"
               height="1230"
               preserveAspectRatio="xMidYMid meet"
-              filter="url(#crispTerrainFilter)"
               style={{
                 imageRendering: "-webkit-optimize-contrast",
               }}
@@ -1043,13 +1049,18 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
                         filter="drop-shadow(0 0 5px #38bdf8)"
                       />
 
-                      {/* Summit Elevation Badge */}
-                      <g transform={`translate(0, ${20 * s})`}>
+                      {/* Summit Elevation Badge with zoom-adaptive scale */}
+                      <g
+                        transform={`translate(0, ${20 * s}) scale(${Math.max(
+                          0.65,
+                          1 / Math.sqrt(zoomLevel)
+                        )})`}
+                      >
                         <rect
-                          x={-(summit.name.length * 4.2 + 26)}
-                          y="-11"
-                          width={(summit.name.length * 4.2 + 26) * 2}
-                          height="17"
+                          x={-(summit.name.length * 3.8 + 22)}
+                          y="-10"
+                          width={(summit.name.length * 3.8 + 22) * 2}
+                          height="16"
                           rx="4.5"
                           fill="rgba(2, 6, 23, 0.92)"
                           stroke={summit.major ? "#38bdf8" : "#64748b"}

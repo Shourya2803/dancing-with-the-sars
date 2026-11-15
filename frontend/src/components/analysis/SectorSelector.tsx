@@ -35,7 +35,7 @@ export default function SectorSelector() {
       </div>
 
       {/* Floating Holographic Sector Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {ANALYSIS_SECTORS.map((sector) => {
           const isSelected = selectedSector.id === sector.id;
           const isHovered = hoveredSector?.id === sector.id;
