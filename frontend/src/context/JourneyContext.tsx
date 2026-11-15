@@ -170,11 +170,18 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
         aoi_geometry: currentLocationDetail.geometry,
         start_date: startDate,
         end_date: endDate,
-        analysis_type: selectedSector.analysisType,
+        sector: selectedSector.id,
+        sector_name: selectedSector.name,
+        analysis_type: selectedSector.id,
         comparison_strategy: comparisonStrategy,
       };
 
       const result = await api.createAnalysis(payload, isMockMode || !backendOnline);
+      if (result) {
+        result.sector = selectedSector.id;
+        result.sector_name = selectedSector.name;
+        result.analysis_type = selectedSector.id;
+      }
       setAnalysisResult(result);
       setAnalysisStep("Analysis complete. Transitioning to observation result.");
       soundController.playPing(1100, 0.2);

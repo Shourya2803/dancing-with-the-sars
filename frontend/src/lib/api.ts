@@ -98,6 +98,9 @@ export class ApiClient {
 
       return {
         ...MOCK_ANALYSIS_CHAMOLI_SURFACE,
+        sector: payload.sector,
+        sector_name: payload.sector_name,
+        analysis_type: payload.analysis_type,
         location: payload.location,
         location_name: payload.location?.name,
         district: payload.district || "Chamoli",

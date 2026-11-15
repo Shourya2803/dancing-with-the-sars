@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useJourney } from "@/context/JourneyContext";
+import { ANALYSIS_SECTORS } from "@/lib/constants";
 import {
   UTTARAKHAND_CITIES,
   UTTARAKHAND_CITIES_LIST,
@@ -27,6 +28,7 @@ import {
 export default function AnalysisPanel() {
   const {
     selectedSector,
+    setSelectedSector,
     selectedLocation,
     setSelectedLocation,
     currentLocationDetail,
@@ -79,28 +81,54 @@ export default function AnalysisPanel() {
 
   return (
     <div className="w-full max-w-2xl mx-auto bg-space-900/90 border border-slate-700/80 rounded-2xl p-6 backdrop-blur-xl shadow-2xl select-none">
-      {/* Top Header with Selected Sector */}
-      <div className="flex items-center justify-between pb-4 mb-5 border-b border-slate-800">
-        <div className="flex items-center gap-3">
-          <span className="text-3xl p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60">
-            {selectedSector.icon}
-          </span>
-          <div>
-            <div className="text-[11px] font-mono text-sky-400 uppercase tracking-wider">
-              Selected Sector
-            </div>
-            <h3 className="text-lg font-bold text-white">
-              {selectedSector.name}
-            </h3>
+      {/* Top Header with Interactive Observation Sector Selector */}
+      <div className="pb-4 mb-5 border-b border-slate-800 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-sky-400" />
+            <span className="text-xs font-mono uppercase tracking-wider text-slate-300">
+              Observation Sector
+            </span>
           </div>
+          <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/80">
+            {selectedSector.code} Active
+          </span>
         </div>
 
-        <button
-          onClick={() => setStage("uttarakhand")}
-          className="text-xs text-slate-400 hover:text-sky-300 font-mono flex items-center gap-1 transition-colors px-2.5 py-1 rounded-lg border border-slate-800 hover:border-slate-700"
-        >
-          <RotateCcw className="w-3 h-3" /> Change Sector
-        </button>
+        {/* 3 Active Sectors Selector */}
+        <div className="grid grid-cols-3 gap-2">
+          {ANALYSIS_SECTORS.map((sec) => {
+            const isSelected = selectedSector.id === sec.id;
+            return (
+              <button
+                key={sec.id}
+                type="button"
+                onClick={() => {
+                  setSelectedSector(sec);
+                  soundController.playPing(880, 0.08);
+                }}
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-1 ${
+                  isSelected
+                    ? "bg-sky-500/15 border-sky-400/80 shadow-lg shadow-sky-500/10 text-white ring-1 ring-sky-400/50"
+                    : "bg-space-950/60 border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xl">{sec.icon}</span>
+                  {isSelected && (
+                    <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
+                  )}
+                </div>
+                <div className="text-xs font-semibold truncate leading-tight mt-0.5">
+                  {sec.name}
+                </div>
+                <div className="text-[9px] font-mono text-slate-400 truncate">
+                  {sec.subtitle}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="space-y-4">

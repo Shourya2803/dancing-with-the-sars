@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useJourney } from "@/context/JourneyContext";
+import { ANALYSIS_SECTORS } from "@/lib/constants";
 import UttarakhandMap from "@/components/map/UttarakhandMap";
 import AIExplanation from "./AIExplanation";
 import TechnicalDetails from "./TechnicalDetails";
@@ -39,6 +40,16 @@ export default function ResultDashboard() {
     );
   }
 
+  const activeSector =
+    ANALYSIS_SECTORS.find(
+      (s) =>
+        s.id === analysisResult?.sector ||
+        s.id === analysisResult?.analysis_type ||
+        s.id === selectedSector?.id
+    ) ||
+    selectedSector ||
+    ANALYSIS_SECTORS[0];
+
   const result = analysisResult?.result;
   const changedArea = result?.changed_area_km2 ?? 14.8;
   const changePercentage = result?.change_percentage ?? 5.7;
@@ -62,14 +73,16 @@ export default function ResultDashboard() {
                 Verified Scientific Output • Level-2 GCOV
               </span>
             </div>
-            <div className="text-xs font-mono font-bold text-sky-400 uppercase tracking-widest mb-1">
-              {locationName} • Surface Change Analysis
+            <div className="text-xs font-mono font-bold text-sky-400 uppercase tracking-widest mb-1 flex items-center gap-2">
+              <span>{locationName}</span>
+              <span>•</span>
+              <span className="text-amber-300">{activeSector.name} Analysis</span>
             </div>
             <h1 className="text-base sm:text-lg font-bold text-white leading-snug">
-              Measurable radar-derived change detected in {locationName} ({districtName}, Uttarakhand).
+              Measurable {activeSector.name.toLowerCase()} radar change detected in {locationName} ({districtName}, Uttarakhand).
             </h1>
             <p className="text-xs text-slate-300 mt-1 font-mono">
-              Sector: {selectedSector.name} • Elevation: {elevationStr}
+              Sector: {activeSector.name} ({activeSector.code}) • Elevation: {elevationStr}
             </p>
           </div>
         </div>
@@ -225,11 +238,11 @@ export default function ResultDashboard() {
           )}
 
           {activeTab === "graphs" && analysisResult && (
-            <RadarGraphs analysis={analysisResult} sectorId={selectedSector?.id} />
+            <RadarGraphs analysis={analysisResult} sectorId={activeSector.id} />
           )}
 
           {activeTab === "geology" && (
-            <Geological3DBlock sectorId={selectedSector?.id} locationName={locationName} />
+            <Geological3DBlock sectorId={activeSector.id} locationName={locationName} />
           )}
 
           {activeTab === "technical" && analysisResult && (

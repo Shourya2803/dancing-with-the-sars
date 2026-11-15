@@ -68,7 +68,9 @@ async def create_analysis(
             end_date=payload.end_date,
             analysis_type=payload.analysis_type,
             comparison_strategy=payload.comparison_strategy,
-            location_name=location_name
+            location_name=location_name,
+            sector=payload.sector,
+            sector_name=payload.sector_name
         )
 
         return AnalysisResponse(
@@ -78,6 +80,9 @@ async def create_analysis(
             district=resolved_district,
             location=location_ref,
             location_name=location_name,
+            sector=payload.sector,
+            sector_name=payload.sector_name,
+            analysis_type=payload.analysis_type,
             requested_period=RequestedPeriod(start=payload.start_date, end=payload.end_date),
             message="Analysis queued for background scientific processing. Poll /analyses/{analysis_id} for status."
         )

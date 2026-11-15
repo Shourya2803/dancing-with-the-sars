@@ -57,11 +57,18 @@ class GeminiService:
         Generates a human-readable summary of the verified scientific result.
         If Gemini is unavailable or fails, returns a safe deterministic fallback template.
         """
-        # Prepare strictly bounded payload
+        # Prepare strictly bounded payload with sector context
+        sector = analysis_context.get("sector") or analysis_context.get("analysis_type", "terrain_surface")
+        sector_name = analysis_context.get("sector_name") or "Terrain & Surface Change"
+        location_name = analysis_context.get("location_name") or analysis_context.get("district") or "Uttarakhand"
+
         summary_payload = {
             "region": analysis_context.get("region", "Uttarakhand"),
             "district": analysis_context.get("district"),
-            "analysis_type": analysis_context.get("analysis_type", "surface_change"),
+            "location_name": location_name,
+            "sector": sector,
+            "sector_name": sector_name,
+            "analysis_type": analysis_context.get("analysis_type", sector),
             "requested_period": {
                 "start": analysis_context.get("start_date"),
                 "end": analysis_context.get("end_date")
@@ -77,14 +84,33 @@ class GeminiService:
         # Attempt Gemini call if configured
         if self._client:
             try:
+                sector_instructions = ""
+                if sector == "forest_canopy":
+                    sector_instructions = (
+                        "The user requested Forest & Canopy Structure analysis. Focus on cross-pol (HV) volume scattering, "
+                        "canopy disturbance, defoliation or structural biomass changes across the forest envelope."
+                    )
+                elif sector == "water_wetlands":
+                    sector_instructions = (
+                        "The user requested Hydrology & Inundation analysis. Focus on specular radar backscatter deflection, "
+                        "surface water expansion or drainage, and soil moisture saturation dynamics."
+                    )
+                else:
+                    sector_instructions = (
+                        "The user requested Terrain & Surface Change analysis. Focus on radiometrically terrain-corrected "
+                        "surface roughness variations, slope erosion, debris shifts, or mass-wasting stability."
+                    )
+
                 prompt = (
-                    "You are a NASA Earth Observation science communicator. "
+                    f"You are a NASA Earth Observation science communicator analyzing NISAR SAR radar data over {location_name}, Uttarakhand.\n"
+                    f"Observation Sector: {sector_name} ({sector}).\n"
+                    f"{sector_instructions}\n\n"
                     "Write a 2 to 3 sentence explanation of this radar backscatter measurement for end users:\n\n"
                     f"{json.dumps(summary_payload, indent=2)}\n\n"
                     "Absolute rules:\n"
-                    "1. Never claim unconfirmed disasters (such as landslides, deforestation, or floods).\n"
+                    "1. Never claim unconfirmed disasters (such as landslides, deforestation, or floods) unless explicitly proven.\n"
                     "2. State the measured change area in km2 and percentage clearly.\n"
-                    "3. Mention that radar backscatter changes reflect physical variations in surface roughness, soil moisture, or vegetation geometry."
+                    "3. Mention specifically the radar physical mechanism relevant to this sector (e.g. volume scattering for forest, specular reflection for water, surface roughness for terrain)."
                 )
 
                 response = self._client.models.generate_content(
@@ -96,29 +122,43 @@ class GeminiService:
             except Exception as e:
                 print(f"[GeminiService Error] Gemini call failed: {e}. Using deterministic fallback.")
 
-        # Deterministic fallback template (guaranteed scientifically safe)
+        # Deterministic fallback template (guaranteed scientifically safe and sector-specific)
         return self._generate_fallback_explanation(summary_payload)
 
     def _generate_fallback_explanation(self, payload: Dict[str, Any]) -> str:
-        district_name = payload.get("district") or "the selected area of Uttarakhand"
+        loc_name = payload.get("location_name") or payload.get("district") or "the selected area of Uttarakhand"
+        sector = payload.get("sector", "terrain_surface")
         dist = payload.get("change_distribution") or {}
         tot = dist.get("total_significant_change") or {}
         changed_km2 = tot.get("area_km2")
         changed_pct = tot.get("percentage")
-        magnitude = tot.get("magnitude", "moderate")
 
         start = payload.get("requested_period", {}).get("start", "")[:10]
         end = payload.get("requested_period", {}).get("end", "")[:10]
 
-        if changed_km2 is not None and changed_pct is not None:
-            return (
-                f"Between {start} and {end}, radar analysis over {district_name} detected measurable "
-                f"surface backscatter change across {changed_km2:.2f} km² ({changed_pct:.1f}% of the analyzed area). "
-                f"This indicates radar-derived surface roughness, moisture, or vegetation structure alterations "
-                f"during this period, though it does not independently confirm a specific disaster event."
-            )
-        else:
-            return (
-                f"Radar observation analysis over {district_name} between {start} and {end} was completed. "
-                "Surface measurements remained predominantly within nominal baseline satellite radar variability."
-            )
+        if sector == "forest_canopy":
+            if changed_km2 is not None and changed_pct is not None:
+                return (
+                    f"Between {start} and {end}, NISAR radar canopy assessment over {loc_name} detected structural "
+                    f"volume backscatter alteration across {changed_km2:.2f} km² ({changed_pct:.1f}% of the observed woodland canopy). "
+                    f"This signal variation corresponds to canopy density fluctuation, seasonal defoliation, or sub-canopy dielectric moisture changes."
+                )
+            return f"Canopy radar backscatter across {loc_name} between {start} and {end} remained within normal seasonal forest baseline limits."
+
+        elif sector == "water_wetlands":
+            if changed_km2 is not None and changed_pct is not None:
+                return (
+                    f"Between {start} and {end}, hydrological radar monitoring over {loc_name} identified specular reflection "
+                    f"transitions across {changed_km2:.2f} km² ({changed_pct:.1f}% of the target watershed). "
+                    f"This indicates localized surface water expansion, riverbank inundation, or altered topsoil saturation levels."
+                )
+            return f"Hydrological radar reflection over {loc_name} between {start} and {end} showed stable water bodies and baseline soil moisture."
+
+        else: # terrain_surface
+            if changed_km2 is not None and changed_pct is not None:
+                return (
+                    f"Between {start} and {end}, radar terrain analysis over {loc_name} detected physical surface backscatter "
+                    f"roughness change across {changed_km2:.2f} km² ({changed_pct:.1f}% of the monitored zone). "
+                    f"This reflects slope roughness alterations, surface debris movement, or moisture variations, while remaining within expected geological parameters."
+                )
+            return f"Radar terrain observation over {loc_name} between {start} and {end} revealed stable bedrock geometry with nominal baseline roughness."

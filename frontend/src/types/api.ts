@@ -59,6 +59,8 @@ export interface AnalysisCreateRequest {
   start_date: string;
   end_date: string;
   analysis_type: string;
+  sector?: string;
+  sector_name?: string;
   comparison_strategy?: string;
 }
 
@@ -69,6 +71,9 @@ export interface AnalysisResponse {
   location?: LocationReference;
   location_name?: string;
   district?: string;
+  sector?: string;
+  sector_name?: string;
+  analysis_type?: string;
   requested_period: RequestedPeriod;
   observations_used: ObservationSummary[];
   result?: ScientificResultPayload;

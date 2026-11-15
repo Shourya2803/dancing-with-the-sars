@@ -16,7 +16,7 @@ export interface AnalysisSector {
   id: string;
   name: string;
   code: string;
-  analysisType: "surface_change" | "insar_deformation";
+  analysisType: string;
   icon: string;
   subtitle: string;
   description: string;
