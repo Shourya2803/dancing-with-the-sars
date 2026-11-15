@@ -79,6 +79,10 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [hoveredPinId, setHoveredPinId] = useState<string | null>(null);
 
+  // Date picker element refs for calendar popover
+  const startDateInputRef = useRef<HTMLInputElement>(null);
+  const endDateInputRef = useRef<HTMLInputElement>(null);
+
   // Close dropdowns on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -762,67 +766,76 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
                 </div>
               </div>
 
-              {/* Field 2: Temporal Window Dates */}
+              {/* Field 2: Temporal Window Dates with Interactive Calendar Pickers */}
               <div className="space-y-3">
                 <label className="text-xs font-mono uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5 text-sky-400" />
                   <span>Requested Temporal Window</span>
                 </label>
 
-                <div className="space-y-2.5 text-xs font-mono">
+                <div className="space-y-3 text-xs font-mono">
+                  {/* Pre-Event Baseline Date */}
                   <div>
-                    <label className="block text-[11px] text-slate-400 mb-1">
-                      Pre-Event Baseline Date:
+                    <label className="block text-[11px] text-slate-400 mb-1 flex items-center justify-between">
+                      <span>Pre-Event Baseline Date:</span>
+                      <span className="text-[10px] text-sky-400 font-sans">Open calendar</span>
                     </label>
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full bg-space-900 border border-slate-700 hover:border-slate-600 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 cursor-pointer"
-                    />
+                    <div
+                      onClick={() => startDateInputRef.current?.showPicker?.()}
+                      className="flex items-center justify-between bg-space-900 border border-slate-700 hover:border-sky-400 rounded-xl px-3 py-2.5 cursor-pointer transition-colors group shadow-inner"
+                    >
+                      <input
+                        ref={startDateInputRef}
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="w-full bg-transparent text-white font-mono text-xs focus:outline-none cursor-pointer [color-scheme:dark]"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startDateInputRef.current?.showPicker?.();
+                        }}
+                        className="p-1 rounded-lg hover:bg-slate-800 text-sky-400 group-hover:text-sky-300 transition-colors cursor-pointer shrink-0 ml-2"
+                        title="Click to open calendar"
+                      >
+                        <Calendar className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
+                  {/* Post-Event Observation Date */}
                   <div>
-                    <label className="block text-[11px] text-slate-400 mb-1">
-                      Post-Event Observation Date:
+                    <label className="block text-[11px] text-slate-400 mb-1 flex items-center justify-between">
+                      <span>Post-Event Observation Date:</span>
+                      <span className="text-[10px] text-sky-400 font-sans">Open calendar</span>
                     </label>
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full bg-space-900 border border-slate-700 hover:border-slate-600 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 cursor-pointer"
-                    />
+                    <div
+                      onClick={() => endDateInputRef.current?.showPicker?.()}
+                      className="flex items-center justify-between bg-space-900 border border-slate-700 hover:border-sky-400 rounded-xl px-3 py-2.5 cursor-pointer transition-colors group shadow-inner"
+                    >
+                      <input
+                        ref={endDateInputRef}
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="w-full bg-transparent text-white font-mono text-xs focus:outline-none cursor-pointer [color-scheme:dark]"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          endDateInputRef.current?.showPicker?.();
+                        }}
+                        className="p-1 rounded-lg hover:bg-slate-800 text-sky-400 group-hover:text-sky-300 transition-colors cursor-pointer shrink-0 ml-2"
+                        title="Click to open calendar"
+                      >
+                        <Calendar className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Verified 12-day Orbit Presets */}
-            <div className="pt-2 border-t border-slate-800 space-y-2">
-              <div className="text-[11px] font-mono text-slate-400 uppercase tracking-wider">
-                Verified 12-Day Repeat Passes (Track 106 / Frame 073)
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                <button
-                  onClick={() => {
-                    setStartDate("2025-11-15");
-                    setEndDate("2025-12-05");
-                    soundController.playPing(750, 0.08);
-                  }}
-                  className="p-2 rounded-xl bg-space-900 hover:bg-sky-950/60 border border-slate-800 hover:border-sky-500/50 text-slate-300 hover:text-sky-200 text-left transition-colors cursor-pointer"
-                >
-                  Nov 17 ➔ Nov 29, 2025 (Pair A)
-                </button>
-                <button
-                  onClick={() => {
-                    setStartDate("2025-12-05");
-                    setEndDate("2025-12-28");
-                    soundController.playPing(750, 0.08);
-                  }}
-                  className="p-2 rounded-xl bg-space-900 hover:bg-sky-950/60 border border-slate-800 hover:border-sky-500/50 text-slate-300 hover:text-sky-200 text-left transition-colors cursor-pointer"
-                >
-                  Dec 11 ➔ Dec 23, 2025 (Pair B)
-                </button>
               </div>
             </div>
 
