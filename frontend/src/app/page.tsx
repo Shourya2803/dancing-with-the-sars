@@ -70,29 +70,10 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* 5. Uttarakhand Exploration Stage */}
-      {stage === "uttarakhand" && (
-        <div className="relative w-full h-full flex flex-col pt-16">
-          <div className="relative flex-1 w-full h-full">
-            <UttarakhandMap showResultLayer={false} />
-
-            {/* Floating Sector Selection Overlay Container */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-full max-w-4xl px-4 pointer-events-auto">
-              <SectorSelector />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 5. Sector Selected / Analysis Configuration Stage */}
-      {stage === "sector_selected" && (
-        <div className="relative w-full h-full flex items-center justify-center pt-16 px-4">
-          <div className="absolute inset-0 z-0 opacity-40 blur-[1px]">
-            <UttarakhandMap showResultLayer={false} />
-          </div>
-          <div className="relative z-10 w-full max-w-2xl">
-            <AnalysisPanel />
-          </div>
+      {/* 5. Uttarakhand Exploration & Telemetry Command Center Stage */}
+      {(stage === "uttarakhand" || stage === "sector_selected") && (
+        <div className="relative w-full h-full">
+          <UttarakhandMap showResultLayer={false} />
         </div>
       )}
 

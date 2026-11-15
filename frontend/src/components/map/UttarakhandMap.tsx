@@ -1,94 +1,87 @@
 "use client";
 
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { useJourney } from "@/context/JourneyContext";
-import { UTTARAKHAND_DISTRICTS } from "@/lib/constants";
-import { DistrictDetail } from "@/types/api";
+import { UTTARAKHAND_DISTRICTS, ANALYSIS_SECTORS } from "@/lib/constants";
 import { soundController } from "@/lib/audio";
+import { DistrictDetail } from "@/types/api";
+import { AnalysisSector } from "@/types/journey";
 import {
+  ArrowLeft,
+  MapPin,
+  Satellite,
+  Calendar,
   Layers,
+  Play,
+  RotateCcw,
   ZoomIn,
   ZoomOut,
-  RotateCcw,
-  Info,
+  Sparkles,
+  ShieldCheck,
+  Activity,
   Sliders,
-  MapPin,
-  Eye,
-  EyeOff,
+  CheckCircle2,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 
 interface UttarakhandMapProps {
   showResultLayer?: boolean;
 }
 
+// 13 Districts hotspot coordinates on the authentic 1470x1230 map
+const DISTRICT_HOTSPOTS: Record<
+  string,
+  { x: number; y: number; color: string; label: string }
+> = {
+  uttarkashi: { x: 500, y: 250, color: "#94a3b8", label: "Uttarkashi" },
+  chamoli: { x: 750, y: 575, color: "#38bdf8", label: "Chamoli" },
+  rudraprayag: { x: 650, y: 475, color: "#fb923c", label: "Rudraprayag" },
+  tehri_garhwal: { x: 450, y: 525, color: "#4ade80", label: "Tehri Garhwal" },
+  dehradun: { x: 275, y: 450, color: "#f472b6", label: "Dehradun" },
+  haridwar: { x: 325, y: 700, color: "#fbbf24", label: "Haridwar" },
+  pauri_garhwal: { x: 525, y: 700, color: "#c084fc", label: "Pauri Garhwal" },
+  pithoragarh: { x: 1025, y: 600, color: "#f87171", label: "Pithoragarh" },
+  bageshwar: { x: 850, y: 675, color: "#f472b6", label: "Bageshwar" },
+  almora: { x: 750, y: 800, color: "#a3e635", label: "Almora" },
+  champawat: { x: 950, y: 925, color: "#818cf8", label: "Champawat" },
+  nainital: { x: 700, y: 950, color: "#facc15", label: "Nainital" },
+  udham_singh_nagar: { x: 750, y: 1050, color: "#e879f9", label: "Udham Singh Nagar" },
+};
+
 export default function UttarakhandMap({ showResultLayer = false }: UttarakhandMapProps) {
   const {
     selectedDistrict,
     setSelectedDistrict,
     currentDistrictDetail,
-    stage,
+    selectedSector,
+    setSelectedSector,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
+    comparisonStrategy,
+    setComparisonStrategy,
+    executeAnalysis,
+    isAnalyzing,
     setStage,
-    analysisResult,
+    isMockMode,
+    toggleMockMode,
+    isMuted,
+    toggleAudio,
   } = useJourney();
 
-  const [hoveredDistrict, setHoveredDistrict] = useState<DistrictDetail | null>(null);
+  const [divisionFilter, setDivisionFilter] = useState<"all" | "Garhwal" | "Kumaon">("all");
+  const [hoveredDistrictId, setHoveredDistrictId] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [opacity, setOpacity] = useState<number>(0.85);
-  const [visibleLayers, setVisibleLayers] = useState<{
-    districts: boolean;
-    labels: boolean;
-    nisarTrack: boolean;
-    changeOverlay: boolean;
-    contours: boolean;
-  }>({
-    districts: true,
-    labels: true,
-    nisarTrack: true,
-    changeOverlay: true,
-    contours: true,
-  });
 
-  const svgRef = useRef<SVGSVGElement>(null);
+  const activeDistrictKey = selectedDistrict || "chamoli";
+  const activeHotspot = DISTRICT_HOTSPOTS[activeDistrictKey] || DISTRICT_HOTSPOTS["chamoli"];
 
-  // Geographic Bounding Box for Uttarakhand
-  // [minLon: 77.4, minLat: 28.6, maxLon: 81.2, maxLat: 31.6]
-  const bbox = useMemo(() => ({
-    minLon: 77.4,
-    maxLon: 81.2,
-    minLat: 28.6,
-    maxLat: 31.6,
-  }), []);
-
-  // Convert Lon/Lat into SVG ViewBox coordinates [0, 0, 1000, 800]
-  const projectCoord = (lon: number, lat: number): [number, number] => {
-    const width = 1000;
-    const height = 800;
-    const padding = 40;
-
-    const x = padding + ((lon - bbox.minLon) / (bbox.maxLon - bbox.minLon)) * (width - padding * 2);
-    // Invert Y because latitude increases northward while SVG Y increases downward
-    const y = height - padding - ((lat - bbox.minLat) / (bbox.maxLat - bbox.minLat)) * (height - padding * 2);
-    return [x, y];
-  };
-
-  const getDistrictPath = (district: DistrictDetail): string => {
-    if (!district.geometry || !district.geometry.coordinates) return "";
-    const coords = district.geometry.coordinates;
-    const ring = (Array.isArray(coords[0]) && Array.isArray(coords[0][0]))
-      ? (coords[0] as unknown as number[][])
-      : (coords as unknown as number[][]);
-    return ring
-      .map((coord: number[], idx: number) => {
-        const [x, y] = projectCoord(coord[0], coord[1]);
-        return `${idx === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`;
-      })
-      .join(" ") + " Z";
-  };
-
-  // Pan & Drag controls
+  // Pan handling
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
     setIsDragging(true);
@@ -112,406 +105,624 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
     setPanOffset({ x: 0, y: 0 });
   };
 
-  const handleSelectDistrict = (district: DistrictDetail) => {
-    setSelectedDistrict(district.id);
-    soundController.playPing(800, 0.12);
-    if (stage === "uttarakhand") {
-      setStage("sector_selected");
-    }
+  const handleSelectDistrict = (distId: string) => {
+    soundController.playPing(880, 0.12);
+    setSelectedDistrict(distId);
   };
 
+  const handleSelectSector = (sector: AnalysisSector) => {
+    soundController.playPing(750, 0.1);
+    setSelectedSector(sector);
+  };
+
+  const handleRunAnalysis = () => {
+    soundController.playRadarSweep();
+    executeAnalysis();
+  };
+
+  const filteredDistricts = Object.values(UTTARAKHAND_DISTRICTS).filter(
+    (d) => divisionFilter === "all" || d.division === divisionFilter
+  );
+
   return (
-    <div className="relative w-full h-full bg-space-950 overflow-hidden select-none">
-      {/* Top Map Context Banner */}
-      <div className="absolute top-4 left-4 z-20 flex items-center gap-3">
-        <div className="px-3 py-1.5 rounded-lg bg-space-900/90 border border-sky-500/30 backdrop-blur-md text-xs font-mono text-sky-300 flex items-center gap-2 shadow-lg">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>INDIA • UTTARAKHAND GEOGRAPHIC DOMAIN • EPSG:32644 (UTM 44N)</span>
-        </div>
-
-        {visibleLayers.nisarTrack && (
-          <div className="px-3 py-1.5 rounded-lg bg-space-900/90 border border-indigo-500/30 backdrop-blur-md text-xs font-mono text-indigo-300 hidden md:flex items-center gap-1.5 shadow-lg">
-            <span>NISAR TRACK 106 (DESCENDING) • FRAME 073 / 074</span>
-          </div>
-        )}
+    <div className="relative w-full h-full bg-space-950 overflow-hidden select-none flex flex-col font-sans">
+      {/* =========================================================================
+          BACKGROUND: SOFTLY BLURRED 3D MAP OF INDIA
+          ========================================================================= */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <img
+          src="/india_3d_relief_glowing.png"
+          alt="India 3D Map Blurred Background"
+          className="w-full h-full object-contain filter blur-[14px] opacity-35 brightness-60 scale-125 transition-transform duration-1000 ease-out"
+          style={{
+            transform: `translate(${panOffset.x * 0.08}px, ${panOffset.y * 0.08}px) scale(${1.25 + (zoomLevel - 1) * 0.08})`,
+          }}
+        />
+        {/* Soft cosmic dark gradient vignette overlay */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_20%,rgba(2,6,23,0.75)_70%,rgba(0,0,0,0.95)_100%)] pointer-events-none" />
       </div>
 
-      {/* India National Context Locator Map */}
-      <div className="absolute top-4 right-16 z-20 hidden md:block select-none">
-        <div className="p-2.5 rounded-xl bg-space-900/90 border border-sky-500/40 backdrop-blur-xl shadow-2xl flex flex-col items-center gap-1.5">
-          <div className="flex items-center gap-1.5 text-[10px] font-mono text-sky-400 uppercase tracking-wider">
-            <MapPin className="w-3 h-3 text-sky-400" />
-            <span>India • Uttarakhand</span>
-          </div>
-          <svg
-            viewBox="0 0 100 120"
-            className="w-20 h-24 stroke-sky-400/60 fill-slate-800/80 drop-shadow-[0_0_8px_rgba(56,189,248,0.3)]"
+      {/* =========================================================================
+          1. TOP FIELD: COMMAND HUD & OBSERVATION DOMAIN STATUS
+          ========================================================================= */}
+      <header className="relative z-20 h-16 px-6 flex items-center justify-between bg-space-900/85 backdrop-blur-xl border-b border-sky-500/25 shadow-2xl">
+        {/* Left: Back to India Map & Domain Title */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => {
+              soundController.playPing(650, 0.1);
+              setStage("india");
+            }}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-space-950/80 hover:bg-space-900 border border-slate-700/60 hover:border-sky-400 text-slate-300 hover:text-white text-xs font-mono transition-all shadow-md cursor-pointer"
+            title="Return to 3D India Map"
           >
-            {/* National Silhouette of India */}
-            <path
-              d="M 45 6 L 55 12 L 58 19 L 52 24 L 56 28 L 68 28 L 76 33 L 88 32 L 95 38 L 88 44 L 78 40 L 72 45 L 68 44 L 62 48 L 60 55 L 54 62 L 50 75 L 45 95 L 48 108 L 46 115 L 44 112 L 38 90 L 32 75 L 26 65 L 20 62 L 15 55 L 10 52 L 8 45 L 14 42 L 22 45 L 26 40 L 32 38 L 36 28 L 38 20 L 42 12 Z"
-              strokeWidth="1.2"
-            />
-            {/* Uttarakhand Region Highlighted in the Northern Himalayas */}
-            <path
-              d="M 44 21 L 52 23 L 50 29 L 43 27 Z"
-              className="fill-sky-400 stroke-sky-200 stroke-[1.5] animate-pulse"
-            />
-            {/* Target radar beacon ping */}
-            <circle cx="47.5" cy="25" r="3" className="fill-emerald-400 opacity-75 animate-ping" />
-            <circle cx="47.5" cy="25" r="1.5" className="fill-white" />
-          </svg>
-          <div className="text-[9px] font-mono text-slate-300">
-            Himalayan Crown
+            <ArrowLeft className="w-4 h-4 text-sky-400" />
+            <span className="hidden sm:inline">Back to India</span>
+          </button>
+
+          <div className="h-6 w-px bg-slate-800 hidden sm:block" />
+
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              <h1 className="text-sm font-bold tracking-wider text-white uppercase font-mono">
+                UTTARAKHAND RADAR OBSERVATION DOMAIN
+              </h1>
+            </div>
+            <p className="text-[10px] text-sky-400/80 font-mono tracking-tight hidden sm:block">
+              Himalayan NISAR Sector • 13 Mountain Districts • UTM Zone 44N
+            </p>
           </div>
         </div>
-      </div>
 
-      {/* Floating Map Controls Toolbar */}
-      <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
-        <div className="bg-space-900/90 border border-slate-700/60 rounded-lg backdrop-blur-md p-1 flex flex-col gap-1 shadow-xl">
-          <button
-            onClick={() => setZoomLevel((z) => Math.min(z + 0.3, 3.5))}
-            className="p-2 text-slate-300 hover:text-sky-300 hover:bg-slate-800/60 rounded transition-colors"
-            title="Zoom In"
-          >
-            <ZoomIn className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setZoomLevel((z) => Math.max(z - 0.3, 0.8))}
-            className="p-2 text-slate-300 hover:text-sky-300 hover:bg-slate-800/60 rounded transition-colors"
-            title="Zoom Out"
-          >
-            <ZoomOut className="w-4 h-4" />
-          </button>
-          <button
-            onClick={resetView}
-            className="p-2 text-slate-300 hover:text-sky-300 hover:bg-slate-800/60 rounded transition-colors"
-            title="Reset Map View"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
+        {/* Center: Selected District Active Reticle Badge */}
+        <div className="hidden lg:flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-950/80 border border-sky-400/50 text-sky-200 text-xs font-mono shadow-[0_0_15px_rgba(56,189,248,0.25)]">
+          <MapPin className="w-3.5 h-3.5 text-sky-400 animate-bounce" />
+          <span className="font-semibold text-white">
+            {currentDistrictDetail.name}
+          </span>
+          <span className="text-slate-400">•</span>
+          <span className="text-sky-300">
+            {currentDistrictDetail.division} Division
+          </span>
+          <span className="text-slate-400">•</span>
+          <span className="text-slate-300">
+            {currentDistrictDetail.area_km2.toLocaleString()} km²
+          </span>
         </div>
 
-        {/* Layer Visibility Toggle Box */}
-        <div className="bg-space-900/90 border border-slate-700/60 rounded-lg backdrop-blur-md p-2 shadow-xl text-xs space-y-1.5">
-          <div className="text-[11px] font-mono text-slate-400 uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-slate-800">
-            <Layers className="w-3.5 h-3.5 text-sky-400" /> Layers
+        {/* Right: Orbit Telemetry Status & Utility Controls */}
+        <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-xl bg-space-950/80 border border-indigo-500/30 text-indigo-300 text-[11px] font-mono">
+            <Satellite className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Track 106 • Frame 073 • Descending</span>
           </div>
-          <label className="flex items-center justify-between gap-3 text-slate-300 hover:text-white cursor-pointer">
-            <span>Track 106 Orbit</span>
-            <input
-              type="checkbox"
-              checked={visibleLayers.nisarTrack}
-              onChange={(e) =>
-                setVisibleLayers((v) => ({ ...v, nisarTrack: e.target.checked }))
-              }
-              className="accent-sky-400 w-3.5 h-3.5 cursor-pointer"
-            />
-          </label>
-          <label className="flex items-center justify-between gap-3 text-slate-300 hover:text-white cursor-pointer">
-            <span>District Labels</span>
-            <input
-              type="checkbox"
-              checked={visibleLayers.labels}
-              onChange={(e) =>
-                setVisibleLayers((v) => ({ ...v, labels: e.target.checked }))
-              }
-              className="accent-sky-400 w-3.5 h-3.5 cursor-pointer"
-            />
-          </label>
 
-          {showResultLayer && (
-            <>
-              <label className="flex items-center justify-between gap-3 text-emerald-300 hover:text-emerald-200 cursor-pointer pt-1 border-t border-slate-800">
-                <span>Δγ⁰ Change Raster</span>
-                <input
-                  type="checkbox"
-                  checked={visibleLayers.changeOverlay}
-                  onChange={(e) =>
-                    setVisibleLayers((v) => ({ ...v, changeOverlay: e.target.checked }))
-                  }
-                  className="accent-emerald-400 w-3.5 h-3.5 cursor-pointer"
-                />
-              </label>
+          {/* Audio toggle */}
+          <button
+            onClick={toggleAudio}
+            className="p-2 rounded-xl bg-space-950/80 border border-slate-700/60 hover:border-sky-500/40 text-slate-400 hover:text-white transition-all cursor-pointer"
+            title={isMuted ? "Unmute sound" : "Mute sound"}
+          >
+            {!isMuted ? (
+              <Volume2 className="w-4 h-4 text-sky-400 animate-pulse" />
+            ) : (
+              <VolumeX className="w-4 h-4" />
+            )}
+          </button>
 
-              {/* Opacity Slider */}
-              <div className="pt-1.5 flex flex-col gap-1">
-                <div className="flex justify-between text-[10px] font-mono text-slate-400">
-                  <span>Layer Opacity</span>
-                  <span>{Math.round(opacity * 100)}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.2"
-                  max="1.0"
-                  step="0.05"
-                  value={opacity}
-                  onChange={(e) => setOpacity(parseFloat(e.target.value))}
-                  className="w-28 accent-sky-400 h-1 bg-slate-700 rounded cursor-pointer"
-                />
+          {/* Mock mode toggle */}
+          <button
+            onClick={toggleMockMode}
+            className={`px-2.5 py-1 rounded-xl border text-[10px] font-mono transition-all cursor-pointer ${
+              isMockMode
+                ? "bg-amber-950/80 border-amber-500/60 text-amber-300"
+                : "bg-emerald-950/80 border-emerald-500/60 text-emerald-300"
+            }`}
+          >
+            {isMockMode ? "Mock Mode" : "API Live"}
+          </button>
+        </div>
+      </header>
+
+      {/* =========================================================================
+          MIDDLE WORKSPACE: LEFT FIELD + CENTER MAP + RIGHT FIELD
+          ========================================================================= */}
+      <div className="relative flex-1 w-full h-[calc(100vh-8rem)] flex overflow-hidden">
+        {/* ---------------------------------------------------------------------
+            2. LEFT FIELD: DISTRICT NAVIGATOR & VERIFIED HAZARD SECTORS
+            --------------------------------------------------------------------- */}
+        <aside className="relative z-10 w-80 2xl:w-88 h-full p-4 overflow-y-auto space-y-4 pointer-events-auto shrink-0 hidden md:block">
+          {/* Card 1: 13 Districts Navigator */}
+          <div className="rounded-2xl bg-space-900/85 backdrop-blur-xl border border-slate-700/70 p-4 shadow-2xl space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-white uppercase tracking-wider">
+                <MapPin className="w-3.5 h-3.5 text-sky-400" />
+                <span>13 Districts</span>
               </div>
-            </>
-          )}
-        </div>
-      </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800">
+                Uttarakhand
+              </span>
+            </div>
 
-      {/* Main Interactive Geospatial SVG Canvas */}
-      <svg
-        ref={svgRef}
-        viewBox="0 0 1000 800"
-        className="w-full h-full cursor-grab active:cursor-grabbing transition-transform"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-      >
-        <defs>
-          {/* Subtle Grid Pattern */}
-          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path
-              d="M 40 0 L 0 0 0 40"
-              fill="none"
-              stroke="#0f1d38"
-              strokeWidth="0.8"
-            />
-          </pattern>
-
-          {/* Gradients */}
-          <radialGradient id="himalayanRidge" cx="50%" cy="30%" r="70%">
-            <stop offset="0%" stopColor="#1e293b" stopOpacity="0.4" />
-            <stop offset="100%" stopColor="#070e1e" stopOpacity="0.1" />
-          </radialGradient>
-
-          {/* Change Area Pattern for Negative Backscatter */}
-          <pattern id="negChangePat" width="8" height="8" patternUnits="userSpaceOnUse">
-            <path d="M 0 8 L 8 0 M 0 0 L 8 8" stroke="#f43f5e" strokeWidth="1.2" opacity="0.6" />
-          </pattern>
-
-          {/* Change Area Pattern for Positive Backscatter */}
-          <pattern id="posChangePat" width="8" height="8" patternUnits="userSpaceOnUse">
-            <circle cx="4" cy="4" r="1.5" fill="#10b981" opacity="0.7" />
-          </pattern>
-        </defs>
-
-        {/* Zoom & Pan Group Container */}
-        <g
-          transform={`translate(${panOffset.x + (1 - zoomLevel) * 200}, ${
-            panOffset.y + (1 - zoomLevel) * 160
-          }) scale(${zoomLevel})`}
-        >
-          {/* Coordinate Background Grid */}
-          <rect x="-200" y="-200" width="1400" height="1200" fill="url(#grid)" />
-
-          {/* NISAR Orbital Swath Corridor (Track 106 Descending Corridor) */}
-          {visibleLayers.nisarTrack && (
-            <g opacity="0.25">
-              <polygon
-                points="420,-50 820,-50 680,850 280,850"
-                fill="#38bdf8"
-                opacity="0.08"
-              />
-              <line
-                x1="620"
-                y1="-50"
-                x2="480"
-                y2="850"
-                stroke="#38bdf8"
-                strokeWidth="1.8"
-                strokeDasharray="6,6"
-              />
-              <text
-                x="560"
-                y="30"
-                fill="#38bdf8"
-                fontSize="11"
-                fontFamily="monospace"
-                letterSpacing="2"
-                transform="rotate(12, 560, 30)"
+            {/* Division Filter Tabs */}
+            <div className="flex gap-1 p-1 rounded-xl bg-space-950 border border-slate-800 text-[11px] font-mono">
+              <button
+                onClick={() => setDivisionFilter("all")}
+                className={`flex-1 py-1 rounded-lg transition-all ${
+                  divisionFilter === "all"
+                    ? "bg-sky-500/25 border border-sky-400/50 text-sky-200 font-semibold"
+                    : "text-slate-400 hover:text-white"
+                }`}
               >
-                NISAR FLIGHT GROUND TRACK 106 ➔
-              </text>
-            </g>
-          )}
-
-          {/* All 13 Uttarakhand Districts */}
-          {Object.values(UTTARAKHAND_DISTRICTS).map((district) => {
-            const isSelected = selectedDistrict === district.id;
-            const isHovered = hoveredDistrict?.id === district.id;
-            const path = getDistrictPath(district);
-            const [cx, cy] = projectCoord(district.centroid.lon, district.centroid.lat);
-
-            return (
-              <g
-                key={district.id}
-                className="transition-colors duration-200 cursor-pointer"
-                onMouseEnter={() => setHoveredDistrict(district)}
-                onMouseLeave={() => setHoveredDistrict(null)}
-                onClick={() => handleSelectDistrict(district)}
+                All (13)
+              </button>
+              <button
+                onClick={() => setDivisionFilter("Garhwal")}
+                className={`flex-1 py-1 rounded-lg transition-all ${
+                  divisionFilter === "Garhwal"
+                    ? "bg-sky-500/25 border border-sky-400/50 text-sky-200 font-semibold"
+                    : "text-slate-400 hover:text-white"
+                }`}
               >
-                {/* District Boundary Polygon */}
-                <path
-                  d={path}
-                  fill={
-                    isSelected
-                      ? "#0369a1"
-                      : isHovered
-                      ? "#1e3a5f"
-                      : "#0b162c"
-                  }
-                  fillOpacity={isSelected ? 0.75 : isHovered ? 0.6 : 0.4}
-                  stroke={
-                    isSelected
-                      ? "#38bdf8"
-                      : isHovered
-                      ? "#7dd3fc"
-                      : "#1e293b"
-                  }
-                  strokeWidth={isSelected ? 2.5 : isHovered ? 1.8 : 1.2}
-                />
+                Garhwal (7)
+              </button>
+              <button
+                onClick={() => setDivisionFilter("Kumaon")}
+                className={`flex-1 py-1 rounded-lg transition-all ${
+                  divisionFilter === "Kumaon"
+                    ? "bg-sky-500/25 border border-sky-400/50 text-sky-200 font-semibold"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                Kumaon (6)
+              </button>
+            </div>
 
-                {/* District Centroid Anchor Point */}
-                <circle
-                  cx={cx}
-                  cy={cy}
-                  r={isSelected ? 4.5 : 2.8}
-                  fill={isSelected ? "#38bdf8" : "#94a3b8"}
-                  stroke="#020408"
-                  strokeWidth="1.5"
-                />
-
-                {/* District Name Label */}
-                {visibleLayers.labels && (
-                  <text
-                    x={cx}
-                    y={cy - 8}
-                    textAnchor="middle"
-                    fill={isSelected ? "#e0f2fe" : "#94a3b8"}
-                    fontSize={isSelected ? "13" : "11"}
-                    fontWeight={isSelected ? "600" : "400"}
-                    letterSpacing="0.5"
-                    className="pointer-events-none select-none drop-shadow"
-                  >
-                    {district.name}
-                  </text>
-                )}
-              </g>
-            );
-          })}
-
-          {/* Scientific Change Result Overlay (When in Result Mode) */}
-          {showResultLayer && visibleLayers.changeOverlay && (
-            <g opacity={opacity} className="transition-opacity duration-300">
-              {/* Highlight AOI Sector Boundary */}
-              {(() => {
-                const currentDist = UTTARAKHAND_DISTRICTS[selectedDistrict] || UTTARAKHAND_DISTRICTS["chamoli"];
-                const [cx, cy] = projectCoord(currentDist.centroid.lon, currentDist.centroid.lat);
+            {/* Scrollable District Chips */}
+            <div className="max-h-56 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+              {filteredDistricts.map((district) => {
+                const isSelected = activeDistrictKey === district.id;
+                const isHovered = hoveredDistrictId === district.id;
+                const spot = DISTRICT_HOTSPOTS[district.id];
 
                 return (
-                  <g>
-                    {/* Simulated verified threshold change polygons */}
-                    {/* 1. Negative backscatter drop (water/landslide scar): Delta Gamma <= -3.0 dB */}
-                    <path
-                      d={`M ${cx - 30} ${cy - 20} Q ${cx - 10} ${cy - 45} ${cx + 15} ${cy - 25} Q ${cx + 40} ${cy} ${cx + 20} ${cy + 25} Q ${cx - 15} ${cy + 35} ${cx - 30} ${cy - 20} Z`}
-                      fill="url(#negChangePat)"
-                      stroke="#f43f5e"
-                      strokeWidth="2"
-                    />
+                  <div
+                    key={district.id}
+                    onClick={() => handleSelectDistrict(district.id)}
+                    onMouseEnter={() => setHoveredDistrictId(district.id)}
+                    onMouseLeave={() => setHoveredDistrictId(null)}
+                    className={`flex items-center justify-between p-2 rounded-xl border text-xs cursor-pointer transition-all ${
+                      isSelected
+                        ? "bg-sky-500/20 border-sky-400 text-white shadow-[0_0_12px_rgba(56,189,248,0.3)] ring-1 ring-sky-400/50"
+                        : isHovered
+                        ? "bg-slate-800/80 border-slate-600 text-slate-100"
+                        : "bg-space-950/60 border-slate-800/80 text-slate-300 hover:border-slate-700"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
+                        style={{ backgroundColor: spot?.color || "#38bdf8" }}
+                      />
+                      <span className="font-medium">{district.name}</span>
+                    </div>
 
-                    {/* 2. Positive backscatter increase (debris/talus roughness): Delta Gamma >= +3.0 dB */}
-                    <path
-                      d={`M ${cx + 25} ${cy - 10} Q ${cx + 55} ${cy - 30} ${cx + 70} ${cy + 10} Q ${cx + 45} ${cy + 35} ${cx + 25} ${cy - 10} Z`}
-                      fill="url(#posChangePat)"
-                      stroke="#10b981"
-                      strokeWidth="2"
-                    />
+                    <div className="text-[10px] font-mono text-slate-400">
+                      {district.area_km2.toLocaleString()} km²
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
-                    {/* Calibrated Pulse Beacon at Epicenter */}
+          {/* Card 2: Observation Sectors */}
+          <div className="rounded-2xl bg-space-900/85 backdrop-blur-xl border border-slate-700/70 p-4 shadow-2xl space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-white uppercase tracking-wider">
+                <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
+                <span>Observation Sector</span>
+              </div>
+              <span className="text-[10px] font-mono text-emerald-400">
+                {selectedSector.code}
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {ANALYSIS_SECTORS.map((sector) => {
+                const isSelected = selectedSector.id === sector.id;
+
+                return (
+                  <div
+                    key={sector.id}
+                    onClick={() => handleSelectSector(sector)}
+                    className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
+                      isSelected
+                        ? "bg-sky-500/20 border-sky-400 text-white shadow-[0_0_14px_rgba(56,189,248,0.25)]"
+                        : "bg-space-950/60 border-slate-800 text-slate-300 hover:border-slate-700"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">{sector.icon}</span>
+                        <span className="text-xs font-semibold text-white">
+                          {sector.name}
+                        </span>
+                      </div>
+                      {isSelected && (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-sky-400" />
+                      )}
+                    </div>
+                    <p className="text-[10px] text-slate-400 line-clamp-2">
+                      {sector.description}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </aside>
+
+        {/* ---------------------------------------------------------------------
+            3. CENTER FIELD: UTTARAKHAND DISTRICT MAP (AUTHENTIC 13 DISTRICT ATLAS)
+            --------------------------------------------------------------------- */}
+        <main
+          className="relative flex-1 h-full flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing p-2"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onWheel={(e) => {
+            if (e.deltaY < 0) {
+              setZoomLevel((z) => Math.min(z + 0.15, 3.0));
+            } else {
+              setZoomLevel((z) => Math.max(z - 0.15, 0.8));
+            }
+          }}
+        >
+          {/* Map Controls Floating Pill */}
+          <div className="absolute top-4 right-4 z-20 flex flex-col gap-1.5 p-1 rounded-xl bg-space-900/90 border border-slate-700/60 backdrop-blur-xl shadow-xl">
+            <button
+              onClick={() => setZoomLevel((z) => Math.min(z + 0.25, 3.0))}
+              className="p-2 text-slate-300 hover:text-sky-300 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+              title="Zoom In"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setZoomLevel((z) => Math.max(z - 0.25, 0.8))}
+              className="p-2 text-slate-300 hover:text-sky-300 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+              title="Zoom Out"
+            >
+              <ZoomOut className="w-4 h-4" />
+            </button>
+            <button
+              onClick={resetView}
+              className="p-2 text-slate-300 hover:text-sky-300 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+              title="Reset View"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Interactive SVG Canvas */}
+          <div
+            className="w-full h-full max-w-5xl max-h-[85vh] flex items-center justify-center transition-transform duration-300 ease-out"
+            style={{
+              transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
+              transformOrigin: "center center",
+            }}
+          >
+            <svg
+              viewBox="0 0 1470 1230"
+              className="w-full h-full max-h-[85vh] filter-[drop-shadow(0_15px_35px_rgba(0,0,0,0.85))] select-none"
+            >
+              <defs>
+                {/* Luminous Glow for Active Reticle */}
+                <filter id="activeDistrictGlow" x="-30%" y="-30%" width="160%" height="160%">
+                  <feGaussianBlur stdDeviation="8" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+
+                {/* Drop shadow for 3D state projection */}
+                <radialGradient id="stateShadow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="rgba(0, 0, 0, 0.75)" />
+                  <stop offset="100%" stopColor="transparent" />
+                </radialGradient>
+              </defs>
+
+              {/* 3D Drop Shadow Underneath Uttarakhand */}
+              <ellipse cx="735" cy="1150" rx="420" ry="60" fill="url(#stateShadow)" opacity="0.85" />
+
+              {/* AUTHENTIC 13-DISTRICT UTTARAKHAND MAP (Matching User Reference) */}
+              <image
+                href="/uttarakhand_district_map_glowing.png"
+                x="0"
+                y="0"
+                width="1470"
+                height="1230"
+                preserveAspectRatio="xMidYMid meet"
+                className="pointer-events-none"
+              />
+
+              {/* Diagonal NISAR Ground Track 106 Descending Corridor */}
+              <g opacity="0.45" className="pointer-events-none">
+                <polygon
+                  points="250,-50 850,-50 1250,1280 650,1280"
+                  fill="#38bdf8"
+                  opacity="0.06"
+                />
+                <line
+                  x1="550"
+                  y1="-50"
+                  x2="950"
+                  y2="1280"
+                  stroke="#38bdf8"
+                  strokeWidth="2.5"
+                  strokeDasharray="10,8"
+                />
+                <text
+                  x="800"
+                  y="45"
+                  fill="#38bdf8"
+                  fontSize="16"
+                  fontFamily="monospace"
+                  letterSpacing="3"
+                  transform="rotate(18, 800, 45)"
+                >
+                  NISAR FLIGHT GROUND TRACK 106 ➔
+                </text>
+              </g>
+
+              {/* 13 District Hotspot Touchpoints & Interactive Zones */}
+              {Object.entries(DISTRICT_HOTSPOTS).map(([distId, spot]) => {
+                const isSelected = activeDistrictKey === distId;
+                const isHovered = hoveredDistrictId === distId;
+
+                return (
+                  <g
+                    key={distId}
+                    transform={`translate(${spot.x}, ${spot.y})`}
+                    onClick={() => handleSelectDistrict(distId)}
+                    onMouseEnter={() => setHoveredDistrictId(distId)}
+                    onMouseLeave={() => setHoveredDistrictId(null)}
+                    className="cursor-pointer"
+                  >
+                    {/* Outer invisible hover hit-box (radius 60px) */}
+                    <circle cx="0" cy="0" r="60" className="fill-transparent" />
+
+                    {/* Active Selected Concentric Target Reticle */}
+                    {isSelected && (
+                      <g filter="url(#activeDistrictGlow)">
+                        <circle
+                          cx="0"
+                          cy="0"
+                          r="45"
+                          className="fill-none stroke-sky-400/80 stroke-[2] animate-ping"
+                        />
+                        <circle
+                          cx="0"
+                          cy="0"
+                          r="32"
+                          className="fill-none stroke-sky-300 stroke-[1.8] stroke-dasharray-[4,4]"
+                        />
+                        <line x1="-48" y1="0" x2="-14" y2="0" className="stroke-sky-300 stroke-[2]" />
+                        <line x1="14" y1="0" x2="48" y2="0" className="stroke-sky-300 stroke-[2]" />
+                        <line x1="0" y1="-48" x2="0" y2="-14" className="stroke-sky-300 stroke-[2]" />
+                        <line x1="0" y1="14" x2="0" y2="48" className="stroke-sky-300 stroke-[2]" />
+                      </g>
+                    )}
+
+                    {/* Centroid Anchor Beacon */}
                     <circle
-                      cx={cx}
-                      cy={cy}
-                      r="6"
-                      fill="#38bdf8"
-                      className="animate-ping"
-                      opacity="0.8"
+                      cx="0"
+                      cy="0"
+                      r={isSelected ? 10 : isHovered ? 8 : 6}
+                      fill={isSelected ? "#38bdf8" : spot.color}
+                      stroke="#020408"
+                      strokeWidth="2.5"
+                      className="transition-all duration-200"
                     />
-                    <circle
-                      cx={cx}
-                      cy={cy}
-                      r="4"
-                      fill="#38bdf8"
-                      stroke="#ffffff"
-                      strokeWidth="1.5"
-                    />
+                    <circle cx="0" cy="0" r={isSelected ? 4 : 2.5} fill="#ffffff" />
                   </g>
                 );
-              })()}
-            </g>
-          )}
-        </g>
-      </svg>
-
-      {/* District Hover Metadata Card */}
-      {hoveredDistrict && (
-        <div className="absolute bottom-6 left-6 z-20 bg-space-900/95 border border-sky-500/40 rounded-xl p-3.5 backdrop-blur-md shadow-2xl text-xs max-w-xs transition-all pointer-events-none">
-          <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
-            <span className="font-semibold text-white text-sm">
-              {hoveredDistrict.name}
-            </span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800">
-              {hoveredDistrict.division} Division
-            </span>
+              })}
+            </svg>
           </div>
-          <div className="space-y-1 text-slate-300 font-mono text-[11px]">
-            <div className="flex justify-between">
-              <span className="text-slate-400">Headquarters:</span>
-              <span>{hoveredDistrict.headquarters}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">Total Area:</span>
-              <span>{hoveredDistrict.area_km2.toLocaleString()} km²</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">Centroid:</span>
-              <span>
-                {hoveredDistrict.centroid.lat}°N, {hoveredDistrict.centroid.lon}°E
+        </main>
+
+        {/* ---------------------------------------------------------------------
+            4. RIGHT FIELD: SAR TELEMETRY & PARAMETER CONFIGURATION
+            --------------------------------------------------------------------- */}
+        <aside className="relative z-10 w-80 2xl:w-88 h-full p-4 overflow-y-auto space-y-4 pointer-events-auto shrink-0 hidden lg:block">
+          {/* Card 1: SAR Observable & Strategy */}
+          <div className="rounded-2xl bg-space-900/85 backdrop-blur-xl border border-slate-700/70 p-4 shadow-2xl space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-white uppercase tracking-wider">
+                <Sliders className="w-3.5 h-3.5 text-sky-400" />
+                <span>Observable Strategy</span>
+              </div>
+              <span className="text-[10px] font-mono text-sky-300">
+                Level-2 SAR
               </span>
             </div>
-            <div className="flex justify-between text-sky-400 pt-1">
-              <span>Primary NISAR Orbit:</span>
-              <span>
-                Track {hoveredDistrict.default_nisar_track || 106} • Frame{" "}
-                {hoveredDistrict.default_nisar_frame || 73}
-              </span>
+
+            <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+              <button
+                onClick={() => setComparisonStrategy("first_vs_last")}
+                className={`p-2.5 rounded-xl border text-left transition-all ${
+                  comparisonStrategy === "first_vs_last"
+                    ? "bg-sky-500/20 border-sky-400 text-white font-semibold"
+                    : "bg-space-950/60 border-slate-800 text-slate-400 hover:text-white"
+                }`}
+              >
+                <div className="font-bold text-sky-300">GCOV-RTC</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">
+                  Backscatter Δγ⁰ (dB)
+                </div>
+              </button>
+
+              <button
+                onClick={() => setComparisonStrategy("consecutive_pairs")}
+                className={`p-2.5 rounded-xl border text-left transition-all ${
+                  comparisonStrategy === "consecutive_pairs"
+                    ? "bg-sky-500/20 border-sky-400 text-white font-semibold"
+                    : "bg-space-950/60 border-slate-800 text-slate-400 hover:text-white"
+                }`}
+              >
+                <div className="font-bold text-sky-300">GUNW-InSAR</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">
+                  Displacement (cm)
+                </div>
+              </button>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Scientifically Calibrated Legend */}
-      <div className="absolute bottom-6 right-6 z-20 bg-space-900/90 border border-slate-700/60 rounded-xl p-3 backdrop-blur-md shadow-2xl text-xs">
-        <div className="text-[11px] font-mono text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-          <Info className="w-3.5 h-3.5 text-sky-400" />
-          <span>Calibrated Radar Legend (Δγ⁰)</span>
-        </div>
-        <div className="space-y-1.5 font-mono text-[11px]">
-          <div className="flex items-center gap-2">
-            <span className="w-3.5 h-3.5 rounded bg-rose-500/70 border border-rose-400" />
-            <span className="text-slate-300">
-              Δγ⁰ ≤ -3.0 dB (Smoothing / Inundation)
-            </span>
+          {/* Card 2: 12-Day Orbit Repeat Window */}
+          <div className="rounded-2xl bg-space-900/85 backdrop-blur-xl border border-slate-700/70 p-4 shadow-2xl space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-white uppercase tracking-wider">
+                <Calendar className="w-3.5 h-3.5 text-sky-400" />
+                <span>Temporal Window</span>
+              </div>
+              <span className="text-[10px] font-mono text-emerald-400">
+                12-day Cycle
+              </span>
+            </div>
+
+            <div className="space-y-2.5 text-xs font-mono">
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1">
+                  Pre-Event Baseline Date:
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full bg-space-950 border border-slate-700 hover:border-slate-600 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 cursor-pointer"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1">
+                  Post-Event Observation Date:
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full bg-space-950 border border-slate-700 hover:border-slate-600 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 cursor-pointer"
+                />
+              </div>
+
+              {/* Quick 12-day Preset Passes */}
+              <div className="pt-1 space-y-1.5">
+                <div className="text-[10px] text-slate-500 uppercase tracking-wider">
+                  Verified 12-Day Repeat Passes
+                </div>
+                <div className="grid grid-cols-1 gap-1.5">
+                  <button
+                    onClick={() => {
+                      setStartDate("2025-11-15");
+                      setEndDate("2025-12-05");
+                      soundController.playPing(750, 0.08);
+                    }}
+                    className="p-1.5 rounded-lg bg-space-950 hover:bg-sky-950/60 border border-slate-800 hover:border-sky-500/50 text-[11px] text-left text-slate-300 hover:text-sky-200 transition-colors"
+                  >
+                    Nov 17 ➔ Nov 29, 2025 (Pair A)
+                  </button>
+                  <button
+                    onClick={() => {
+                      setStartDate("2025-12-05");
+                      setEndDate("2025-12-28");
+                      soundController.playPing(750, 0.08);
+                    }}
+                    className="p-1.5 rounded-lg bg-space-950 hover:bg-sky-950/60 border border-slate-800 hover:border-sky-500/50 text-[11px] text-left text-slate-300 hover:text-sky-200 transition-colors"
+                  >
+                    Dec 11 ➔ Dec 23, 2025 (Pair B)
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3.5 h-3.5 rounded bg-slate-700/60 border border-slate-600" />
-            <span className="text-slate-400">|Δγ⁰| &lt; 3.0 dB (Stable Surface)</span>
+
+          {/* Card 3: Instrument & Radar Specs */}
+          <div className="rounded-2xl bg-space-900/85 backdrop-blur-xl border border-slate-700/70 p-4 shadow-2xl space-y-2 text-xs font-mono">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-white uppercase tracking-wider pb-1.5 border-b border-slate-800">
+              <Satellite className="w-3.5 h-3.5 text-sky-400" />
+              <span>NISAR Specs</span>
+            </div>
+            <div className="space-y-1 text-[11px] text-slate-300">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Frequency:</span>
+                <span className="text-sky-300">L-Band (1.25 GHz)</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Polarization:</span>
+                <span>Dual-Pol (HH + HV)</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Resolution:</span>
+                <span>10m x 10m GSD</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Orbit:</span>
+                <span>747 km Sun-Synch</span>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3.5 h-3.5 rounded bg-emerald-500/70 border border-emerald-400" />
-            <span className="text-slate-300">
-              Δγ⁰ ≥ +3.0 dB (Roughness / Debris)
-            </span>
-          </div>
-        </div>
+        </aside>
       </div>
+
+      {/* =========================================================================
+          5. BOTTOM FIELD: TELEMETRY ACTION & ANALYSIS EXECUTION BAR
+          ========================================================================= */}
+      <footer className="relative z-20 h-16 px-6 flex items-center justify-between bg-space-900/85 backdrop-blur-xl border-t border-sky-500/25 shadow-2xl">
+        {/* Left: Selected Mission Summary */}
+        <div className="flex items-center gap-3">
+          <span className="p-2 rounded-xl bg-slate-800/80 border border-slate-700/60 hidden sm:flex items-center justify-center text-lg">
+            {selectedSector.icon}
+          </span>
+          <div>
+            <div className="text-xs font-semibold text-white flex items-center gap-2">
+              <span>Target: {currentDistrictDetail.name}</span>
+              <span className="text-slate-500">•</span>
+              <span className="text-sky-400">{selectedSector.name}</span>
+            </div>
+            <div className="text-[10px] text-slate-400 font-mono hidden sm:block">
+              Temporal Pair: {startDate} ➔ {endDate} • Product: {selectedSector.code}
+            </div>
+          </div>
+        </div>
+
+        {/* Center: Sensitivity Anomaly Threshold */}
+        <div className="hidden xl:flex items-center gap-2 text-xs font-mono text-slate-300">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span>Anomaly Threshold: |Δγ⁰| ≥ 3.0 dB • High Confidence Detection</span>
+        </div>
+
+        {/* Right: PRIMARY ACTION BUTTON */}
+        <button
+          onClick={handleRunAnalysis}
+          disabled={isAnalyzing}
+          className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 via-sky-400 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-slate-950 font-bold font-mono text-xs uppercase tracking-wider flex items-center gap-2.5 shadow-[0_0_20px_rgba(56,189,248,0.5)] hover:shadow-[0_0_30px_rgba(56,189,248,0.85)] transition-all transform hover:scale-[1.02] cursor-pointer disabled:opacity-50"
+        >
+          {isAnalyzing ? (
+            <>
+              <div className="w-4 h-4 rounded-full border-2 border-slate-950 border-t-transparent animate-spin" />
+              <span>CALIBRATING RADAR...</span>
+            </>
+          ) : (
+            <>
+              <Play className="w-4 h-4 fill-slate-950" />
+              <span>EXECUTE NISAR ANALYSIS</span>
+            </>
+          )}
+        </button>
+      </footer>
     </div>
   );
 }
