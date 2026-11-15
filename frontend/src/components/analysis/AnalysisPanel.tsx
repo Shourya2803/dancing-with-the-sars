@@ -119,22 +119,38 @@ export default function AnalysisPanel() {
           {/* Trigger Button */}
           <div
             onClick={() => setIsCityDropdownOpen((prev) => !prev)}
-            className="w-full flex items-center justify-between bg-space-950 border border-slate-700 hover:border-sky-400/60 rounded-xl px-4 py-3 text-sm text-white focus:outline-none transition-all font-sans cursor-pointer shadow-inner"
+            className={`w-full flex items-center justify-between bg-space-950 border rounded-xl px-4 py-3 text-sm focus:outline-none transition-all font-sans cursor-pointer shadow-inner ${
+              currentLocationDetail
+                ? "border-slate-700 hover:border-sky-400/60 text-white"
+                : "border-amber-500/50 hover:border-amber-400 bg-amber-500/5 text-amber-200"
+            }`}
           >
             <div className="flex items-center gap-2.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-sky-400 shrink-0 animate-pulse" />
+              <span
+                className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                  currentLocationDetail ? "bg-sky-400 animate-pulse" : "bg-amber-400 animate-bounce"
+                }`}
+              />
               <div className="text-left">
-                <span className="font-semibold text-white">{currentLocationDetail.name}</span>
-                <span className="text-slate-400 text-xs ml-2">
-                  ({currentLocationDetail.district}, Uttarakhand)
-                </span>
+                {currentLocationDetail ? (
+                  <>
+                    <span className="font-semibold text-white">{currentLocationDetail.name}</span>
+                    <span className="text-slate-400 text-xs ml-2">
+                      ({currentLocationDetail.district}, Uttarakhand)
+                    </span>
+                  </>
+                ) : (
+                  <span className="font-semibold text-amber-300">Select City / Area (36 available)</span>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-emerald-400 hidden sm:inline flex items-center gap-1">
-                <Mountain className="w-3 h-3 inline" />
-                {currentLocationDetail.elevation_m.toLocaleString()}m
-              </span>
+              {currentLocationDetail && (
+                <span className="text-xs font-mono text-emerald-400 hidden sm:inline flex items-center gap-1">
+                  <Mountain className="w-3 h-3 inline" />
+                  {currentLocationDetail.elevation_m.toLocaleString()}m
+                </span>
+              )}
               <ChevronDown
                 className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
                   isCityDropdownOpen ? "rotate-180" : ""
@@ -217,10 +233,14 @@ export default function AnalysisPanel() {
           {/* Location Footprint Meta */}
           <div className="flex justify-between items-center mt-1 text-[11px] text-slate-400 font-mono">
             <span>
-              Coordinates: {currentLocationDetail.latitude.toFixed(4)}°N, {currentLocationDetail.longitude.toFixed(4)}°E
+              {currentLocationDetail
+                ? `Coordinates: ${currentLocationDetail.latitude.toFixed(4)}°N, ${currentLocationDetail.longitude.toFixed(4)}°E`
+                : "Coordinates: Select City / Area"}
             </span>
             <span>
-              Primary Track: {currentLocationDetail.default_nisar_track} • Frame: 0{currentLocationDetail.default_nisar_frame}
+              {currentLocationDetail
+                ? `Primary Track: ${currentLocationDetail.default_nisar_track} • Frame: 0${currentLocationDetail.default_nisar_frame}`
+                : "Track: 106 • Frame: 0320"}
             </span>
           </div>
         </div>
@@ -339,16 +359,26 @@ export default function AnalysisPanel() {
         <div className="pt-3">
           <button
             onClick={executeAnalysis}
-            disabled={isAnalyzing}
-            className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-semibold text-sm tracking-wide transition-all duration-300 shadow-[0_0_25px_rgba(14,165,233,0.35)] flex items-center justify-center gap-2 group disabled:opacity-50 cursor-pointer"
+            disabled={isAnalyzing || !currentLocationDetail}
+            className={`w-full py-3.5 px-6 rounded-xl text-white font-semibold text-sm tracking-wide transition-all duration-300 flex items-center justify-center gap-2 group cursor-pointer ${
+              !currentLocationDetail
+                ? "bg-slate-800 text-slate-400 border border-slate-700/60 opacity-60 cursor-not-allowed"
+                : "bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 shadow-[0_0_25px_rgba(14,165,233,0.35)] disabled:opacity-50"
+            }`}
           >
             <Play className="w-4 h-4 fill-white group-hover:scale-110 transition-transform" />
-            <span>ANALYZE NISAR OBSERVATIONS FOR {currentLocationDetail.name.toUpperCase()}</span>
+            <span>
+              {currentLocationDetail
+                ? `ANALYZE NISAR OBSERVATIONS FOR ${currentLocationDetail.name.toUpperCase()}`
+                : "SELECT A CITY / AREA TO ANALYZE"}
+            </span>
           </button>
 
           <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 mt-2 px-1">
             <span>
-              Target AOI: {currentLocationDetail.name} ({currentLocationDetail.district}, UK)
+              {currentLocationDetail
+                ? `Target AOI: ${currentLocationDetail.name} (${currentLocationDetail.district}, UK)`
+                : "Target AOI: None selected"}
             </span>
             <span>
               {backendOnline

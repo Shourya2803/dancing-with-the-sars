@@ -30,11 +30,37 @@ import {
   Radio,
   Clock,
   Compass,
+  Box,
 } from "lucide-react";
 
 interface UttarakhandMapProps {
   showResultLayer?: boolean;
 }
+
+// ---------------------------------------------------------------------------
+// 3D HIGH HIMALAYAN MOUNTAIN SUMMITS (FACETED RIDGES & SNOW ARÊTES)
+// ---------------------------------------------------------------------------
+interface HimalayanSummit {
+  name: string;
+  alt: string;
+  x: number;
+  y: number;
+  size: number;
+  major: boolean;
+}
+
+const HIMALAYAN_SUMMITS: HimalayanSummit[] = [
+  { name: "Nanda Devi", alt: "7,816m", x: 945, y: 555, size: 28, major: true },
+  { name: "Kamet", alt: "7,756m", x: 915, y: 415, size: 26, major: true },
+  { name: "Trishul", alt: "7,120m", x: 915, y: 605, size: 24, major: true },
+  { name: "Chaukhamba", alt: "7,138m", x: 795, y: 505, size: 24, major: true },
+  { name: "Kedarnath Peak", alt: "6,940m", x: 745, y: 520, size: 22, major: true },
+  { name: "Nilkantha / Badrinath", alt: "6,596m", x: 870, y: 505, size: 22, major: true },
+  { name: "Panchachuli", alt: "6,904m", x: 1115, y: 645, size: 22, major: true },
+  { name: "Bandarpoonch", alt: "6,316m", x: 565, y: 450, size: 20, major: false },
+  { name: "Dunagiri", alt: "7,066m", x: 935, y: 535, size: 20, major: false },
+  { name: "Shivling", alt: "6,543m", x: 730, y: 495, size: 19, major: false },
+];
 
 export default function UttarakhandMap({ showResultLayer = false }: UttarakhandMapProps) {
   const {
@@ -62,7 +88,7 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
   } = useJourney();
 
   // Active City / Location (Single Source of Truth from JourneyContext)
-  const currentLocation: LocationDetail = currentLocationDetail;
+  const currentLocation = currentLocationDetail;
   const selectedLocationId = selectedLocation;
 
   // Dropdown / Popup toggles
@@ -81,7 +107,15 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [hoveredPinId, setHoveredPinId] = useState<string | null>(null);
 
-  // Date picker element refs for calendar popover
+  // 3D Tabletop Relief & Visual Layers
+  const [is3DMode, setIs3DMode] = useState<boolean>(true);
+  const [mouseTilt, setMouseTilt] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [showPeaks, setShowPeaks] = useState<boolean>(true);
+  const [showContours, setShowContours] = useState<boolean>(true);
+
+  // DOM Container Refs
+  const workspaceRef = useRef<HTMLElement>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
   const startDateInputRef = useRef<HTMLInputElement>(null);
   const endDateInputRef = useRef<HTMLInputElement>(null);
 
@@ -109,11 +143,24 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
     return matchesSearch && matchesDivision;
   });
 
-  // Handle selecting a city / area
+  // Handle selecting a city / area with smooth cinematic camera zoom-in & centering
   const handleSelectCity = (city: LocationDetail) => {
-    soundController.playPing(880, 0.12);
+    soundController.playPing(1100, 0.15);
     setSelectedLocation(city.id);
     setIsCityDropdownOpen(false);
+
+    // Calculate exact centering pan offset:
+    // SVG coordinate space is 1470 x 1230, center is (735, 615).
+    const container = mapContainerRef.current;
+    const w = container?.clientWidth || 1100;
+    const h = container?.clientHeight || 800;
+    const k = Math.min(w / 1470, h / 1230);
+    const targetZoom = 2.35;
+    const targetPanX = -(city.mapX - 735) * k * targetZoom;
+    const targetPanY = -(city.mapY - 615) * k * targetZoom;
+
+    setZoomLevel(targetZoom);
+    setPanOffset({ x: targetPanX, y: targetPanY });
   };
 
   // Handle selecting an observation sector
@@ -123,7 +170,7 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
     setIsSectorDropdownOpen(false);
   };
 
-  // Pan controls
+  // Pan controls & 3D Mouse Parallax
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
     setIsDragging(true);
@@ -131,11 +178,18 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    setPanOffset({
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y,
-    });
+    if (isDragging) {
+      setPanOffset({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y,
+      });
+    } else if (is3DMode && workspaceRef.current) {
+      // Subtle 3D tabletop relief tilt responding to mouse cursor
+      const rect = workspaceRef.current.getBoundingClientRect();
+      const relX = (e.clientX - rect.left) / rect.width - 0.5;
+      const relY = (e.clientY - rect.top) / rect.height - 0.5;
+      setMouseTilt({ x: relX, y: relY });
+    }
   };
 
   const handleMouseUp = () => {
@@ -143,8 +197,10 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
   };
 
   const resetView = () => {
+    soundController.playPing(650, 0.1);
     setZoomLevel(1);
     setPanOffset({ x: 0, y: 0 });
+    setSelectedLocation(null);
   };
 
   const handleRunAnalysis = () => {
@@ -180,7 +236,7 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
           TOP COMMAND HUD: DROPDOWN & POPUP TRIGGERS (CLEAN & NON-INTRUSIVE)
           ========================================================================= */}
       <header className="relative z-30 h-16 px-6 flex items-center justify-between bg-space-900/85 backdrop-blur-xl border-b border-sky-500/25 shadow-2xl">
-        {/* Left Section: Back Button & Title */}
+        {/* Left Section: Back Button & Target Area Selector */}
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
@@ -207,15 +263,32 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
               className={`flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl border text-xs font-mono transition-all shadow-lg cursor-pointer ${
                 isCityDropdownOpen
                   ? "bg-sky-500/20 border-sky-400 text-white shadow-[0_0_15px_rgba(56,189,248,0.3)] ring-1 ring-sky-400/50"
+                  : !currentLocation
+                  ? "bg-amber-500/10 border-amber-400/60 hover:border-amber-400 text-amber-200 animate-pulse shadow-[0_0_14px_rgba(245,158,11,0.25)]"
                   : "bg-space-950/80 border-slate-700/70 hover:border-sky-400 text-slate-200 hover:text-white"
               }`}
             >
-              <MapPin className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
+              <MapPin
+                className={`w-3.5 h-3.5 ${
+                  !currentLocation ? "text-amber-400 animate-bounce" : "text-sky-400 animate-pulse"
+                }`}
+              />
               <div className="text-left">
-                <span className="font-bold text-white">{currentLocation.name}</span>
-                <span className="text-slate-400 text-[10px] ml-1.5 hidden xl:inline">
-                  ({currentLocation.district}) • {currentLocation.elevation_m.toLocaleString()}m
-                </span>
+                {currentLocation ? (
+                  <>
+                    <span className="font-bold text-white">{currentLocation.name}</span>
+                    <span className="text-slate-400 text-[10px] ml-1.5 hidden xl:inline">
+                      ({currentLocation.district}) • {currentLocation.elevation_m.toLocaleString()}m
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="font-bold text-amber-300">Select City / Area</span>
+                    <span className="text-slate-400 text-[10px] ml-1.5 hidden xl:inline">
+                      (Click pin on map or select)
+                    </span>
+                  </>
+                )}
               </div>
               <ChevronDown
                 className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
@@ -442,9 +515,10 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
       </header>
 
       {/* =========================================================================
-          FULL-SCREEN CENTER WORKSPACE: MAP BREATHES UNCONSTRAINED
+          FULL-SCREEN CENTER WORKSPACE: 3D TABLETOP RELIEF & HIGH-DEF MAP
           ========================================================================= */}
       <main
+        ref={workspaceRef}
         className="relative flex-1 w-full h-[calc(100vh-8rem)] flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing p-4"
         onClick={closeAllDropdowns}
         onMouseDown={handleMouseDown}
@@ -452,16 +526,16 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
         onMouseUp={handleMouseUp}
         onWheel={(e) => {
           if (e.deltaY < 0) {
-            setZoomLevel((z) => Math.min(z + 0.15, 3.2));
+            setZoomLevel((z) => Math.min(z + 0.15, 3.5));
           } else {
             setZoomLevel((z) => Math.max(z - 0.15, 0.75));
           }
         }}
       >
-        {/* Floating Zoom Controls (Top Right) */}
-        <div className="absolute top-4 right-4 z-20 flex flex-col gap-1.5 p-1 rounded-xl bg-space-900/90 border border-slate-700/60 backdrop-blur-xl shadow-xl">
+        {/* Floating Quick Action Controls (Top Right) */}
+        <div className="absolute top-4 right-4 z-20 flex flex-col gap-1.5 p-1 rounded-xl bg-space-900/90 border border-slate-700/60 backdrop-blur-xl shadow-2xl">
           <button
-            onClick={() => setZoomLevel((z) => Math.min(z + 0.25, 3.2))}
+            onClick={() => setZoomLevel((z) => Math.min(z + 0.25, 3.5))}
             className="p-2 text-slate-300 hover:text-sky-300 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
             title="Zoom In"
           >
@@ -477,35 +551,122 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
           <button
             onClick={resetView}
             className="p-2 text-slate-300 hover:text-sky-300 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-            title="Reset View"
+            title="Reset to Full Uttarakhand Overview"
           >
             <RotateCcw className="w-4 h-4" />
+          </button>
+
+          <div className="h-px bg-slate-800 my-0.5" />
+
+          {/* 3D Mode Toggle Button */}
+          <button
+            onClick={() => {
+              soundController.playPing(800, 0.08);
+              setIs3DMode((prev) => !prev);
+            }}
+            className={`p-2 rounded-lg transition-colors cursor-pointer ${
+              is3DMode
+                ? "bg-sky-500/25 text-sky-300 border border-sky-400/50"
+                : "text-slate-400 hover:text-white hover:bg-slate-800"
+            }`}
+            title={is3DMode ? "3D Tabletop Relief (Active)" : "Switch to 3D Tabletop Relief"}
+          >
+            <Box className="w-4 h-4" />
+          </button>
+
+          {/* Topographic Contours Toggle */}
+          <button
+            onClick={() => {
+              soundController.playPing(800, 0.08);
+              setShowContours((prev) => !prev);
+            }}
+            className={`p-2 rounded-lg transition-colors cursor-pointer ${
+              showContours
+                ? "bg-emerald-500/25 text-emerald-300 border border-emerald-400/50"
+                : "text-slate-400 hover:text-white hover:bg-slate-800"
+            }`}
+            title={showContours ? "Elevation Contours: Visible" : "Elevation Contours: Hidden"}
+          >
+            <Layers className="w-4 h-4" />
+          </button>
+
+          {/* 3D Mountain Summits Toggle */}
+          <button
+            onClick={() => {
+              soundController.playPing(800, 0.08);
+              setShowPeaks((prev) => !prev);
+            }}
+            className={`p-2 rounded-lg transition-colors cursor-pointer ${
+              showPeaks
+                ? "bg-sky-500/25 text-sky-300 border border-sky-400/50"
+                : "text-slate-400 hover:text-white hover:bg-slate-800"
+            }`}
+            title={showPeaks ? "3D Mountain Peaks: Visible" : "3D Mountain Peaks: Hidden"}
+          >
+            <Mountain className="w-4 h-4" />
           </button>
         </div>
 
         {/* Floating Physical Relief Legend Pill (Bottom Center) */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 px-4 py-1.5 rounded-full bg-space-900/90 border border-sky-500/30 backdrop-blur-xl text-[11px] font-mono text-slate-300 shadow-xl flex items-center gap-2 pointer-events-none">
-          <span className="text-sky-400 font-bold">PHYSICAL RELIEF:</span>
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 px-4 py-1.5 rounded-full bg-space-900/90 border border-sky-500/30 backdrop-blur-xl text-[11px] font-mono text-slate-300 shadow-xl flex items-center gap-2.5 pointer-events-none">
+          <span className="text-sky-400 font-bold flex items-center gap-1.5">
+            <Mountain className="w-3.5 h-3.5 text-sky-400" />
+            3D PHYSICAL RELIEF:
+          </span>
           <span>200m (Terai) → 7,816m (Nanda Devi)</span>
           <span className="text-slate-500">|</span>
-          <span className="text-emerald-400">EPSG:32644 (UTM 44N)</span>
+          <span className="text-emerald-400 flex items-center gap-1">
+            <Compass className="w-3.5 h-3.5 text-emerald-400" />
+            UTM Zone 44N • Crisp Vector Network
+          </span>
+          <span className="text-slate-500">|</span>
+          <span className="text-sky-300 font-semibold">
+            {is3DMode ? "3D Tabletop Tilt Active" : "Ortho Flat View"}
+          </span>
         </div>
 
-        {/* Interactive SVG Canvas */}
+        {/* Selected City Optical Target Banner */}
+        {currentLocation && (
+          <div className="absolute top-4 left-4 z-20 px-3.5 py-1.5 rounded-xl bg-space-900/90 border border-sky-400/60 backdrop-blur-xl shadow-xl flex items-center gap-2.5 animate-in fade-in-0 slide-in-from-top-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-sky-400 animate-ping" />
+            <div className="text-xs font-mono text-white">
+              <span className="text-sky-400 font-bold uppercase">{currentLocation.name}</span>
+              <span className="text-slate-400 ml-2">
+                ({currentLocation.district}) • {currentLocation.elevation_m.toLocaleString()}m
+              </span>
+            </div>
+            <button
+              onClick={resetView}
+              className="ml-2 text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+            >
+              Zoom Out
+            </button>
+          </div>
+        )}
+
+        {/* Interactive 3D SVG Stage Canvas */}
         <div
-          className="w-full h-full max-w-6xl max-h-[85vh] flex items-center justify-center transition-transform duration-300 ease-out"
+          ref={mapContainerRef}
+          className="w-full h-full max-w-6xl max-h-[85vh] flex items-center justify-center select-none"
           style={{
-            transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
+            transform: is3DMode
+              ? `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel}) perspective(1400px) rotateX(${
+                  11 - mouseTilt.y * 6
+                }deg) rotateY(${mouseTilt.x * 6}deg)`
+              : `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
             transformOrigin: "center center",
+            transition: isDragging
+              ? "none"
+              : "transform 900ms cubic-bezier(0.16, 1, 0.3, 1)",
           }}
         >
           <svg
             viewBox="0 0 1470 1230"
-            className="w-full h-full max-h-[85vh] filter-[drop-shadow(0_20px_45px_rgba(0,0,0,0.85))] select-none"
+            className="w-full h-full max-h-[85vh] filter-[drop-shadow(0_25px_50px_rgba(0,0,0,0.95))] select-none"
           >
             <defs>
               {/* Luminous Glow for Active Location Reticle */}
-              <filter id="locationReticleGlow" x="-30%" y="-30%" width="160%" height="160%">
+              <filter id="locationReticleGlow" x="-40%" y="-40%" width="180%" height="180%">
                 <feGaussianBlur stdDeviation="8" result="blur" />
                 <feMerge>
                   <feMergeNode in="blur" />
@@ -513,17 +674,150 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
                 </feMerge>
               </filter>
 
-              {/* 3D Drop Shadow Underneath Uttarakhand */}
+              {/* 3D Drop Shadow Underneath Uttarakhand State Plinth */}
               <radialGradient id="stateShadow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="rgba(0, 0, 0, 0.75)" />
+                <stop offset="0%" stopColor="rgba(0, 0, 0, 0.85)" />
+                <stop offset="70%" stopColor="rgba(0, 0, 0, 0.45)" />
                 <stop offset="100%" stopColor="transparent" />
               </radialGradient>
+
+              {/* 3D Geological Stratified Plinth Textures (Horst & Graben Fault-Block Architecture) */}
+              <linearGradient id="siwalikSandstone" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#bca07e" />
+                <stop offset="40%" stopColor="#8a6d4d" />
+                <stop offset="100%" stopColor="#674f36" />
+              </linearGradient>
+
+              <linearGradient id="lesserHimalayanSlate" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#78777d" />
+                <stop offset="50%" stopColor="#55545a" />
+                <stop offset="100%" stopColor="#3d3b41" />
+              </linearGradient>
+
+              <linearGradient id="crystallineBasement" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#323038" />
+                <stop offset="60%" stopColor="#1e1c22" />
+                <stop offset="100%" stopColor="#121115" />
+              </linearGradient>
+
+              <linearGradient id="mantleThrustHeat" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#ea580c" stopOpacity="0.4" />
+                <stop offset="50%" stopColor="#f97316" stopOpacity="0.85" />
+                <stop offset="100%" stopColor="#ea580c" stopOpacity="0.4" />
+              </linearGradient>
+
+              {/* High-Definition Unsharp Mask Filter: Keeps terrain razor-sharp and prevents blurring on zoom */}
+              <filter id="crispTerrainFilter" x="-5%" y="-5%" width="110%" height="110%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="0.8" result="softBlur" />
+                <feComposite
+                  in="SourceGraphic"
+                  in2="softBlur"
+                  operator="arithmetic"
+                  k1="0"
+                  k2="2.4"
+                  k3="-1.4"
+                  k4="0"
+                  result="sharpened"
+                />
+                <feColorMatrix
+                  in="sharpened"
+                  type="matrix"
+                  values="1.12 0    0    0 -0.04
+                          0    1.12 0    0 -0.04
+                          0    0    1.12 0 -0.04
+                          0    0    0    1  0"
+                />
+              </filter>
             </defs>
 
             {/* 3D Drop Shadow Underneath State */}
-            <ellipse cx="735" cy="1160" rx="440" ry="65" fill="url(#stateShadow)" opacity="0.85" />
+            <ellipse cx="735" cy="1160" rx="520" ry="75" fill="url(#stateShadow)" opacity="0.9" />
 
-            {/* AUTHENTIC TOPOGRAPHIC RELIEF MAP OF UTTARAKHAND WITH GLOWING BLUE BORDER */}
+            {/* =========================================================================
+                3D STRATIFIED GEOLOGICAL PLINTH / CRUSTAL BLOCK BASE
+                (Horst & Graben Fault-Block Architecture directly from user reference)
+                ========================================================================= */}
+            {is3DMode && (
+              <g className="pointer-events-none select-none">
+                {/* Layer 1: Siwalik Molasse Sandstone Strata (Upper Sedimentary Bed) */}
+                <path
+                  d="M 280,920 Q 550,1020 735,1030 Q 980,1010 1190,920 L 1190,955 Q 980,1045 735,1065 Q 550,1055 280,955 Z"
+                  fill="url(#siwalikSandstone)"
+                  stroke="#a48460"
+                  strokeWidth="1.2"
+                  opacity="0.95"
+                />
+
+                {/* Layer 2: Lesser Himalayan Carbonates & Slate (Middle Tectonic Unit) */}
+                <path
+                  d="M 280,955 Q 550,1055 735,1065 Q 980,1045 1190,955 L 1190,995 Q 980,1085 735,1105 Q 550,1095 280,995 Z"
+                  fill="url(#lesserHimalayanSlate)"
+                  stroke="#5d5b62"
+                  strokeWidth="1.2"
+                  opacity="0.95"
+                />
+
+                {/* Layer 3: Indian Shield Crystalline Basement / Granite (Deep Footwall) */}
+                <path
+                  d="M 280,995 Q 550,1095 735,1105 Q 980,1085 1190,995 L 1190,1040 Q 980,1130 735,1150 Q 550,1140 280,1040 Z"
+                  fill="url(#crystallineBasement)"
+                  stroke="#222027"
+                  strokeWidth="1.2"
+                  opacity="0.95"
+                />
+
+                {/* Main Himalayan Thrust (MHT) Fault Plane & Mantle Heat Band */}
+                <path
+                  d="M 280,1040 Q 550,1140 735,1150 Q 980,1130 1190,1040 L 1190,1050 Q 980,1140 735,1160 Q 550,1150 280,1050 Z"
+                  fill="url(#mantleThrustHeat)"
+                  opacity="0.85"
+                />
+
+                {/* Stratigraphic Strata Text Labels on 3D Block Edge */}
+                <text
+                  x="735"
+                  y="1052"
+                  textAnchor="middle"
+                  fill="#f1d6b8"
+                  fontSize="10"
+                  fontFamily="monospace"
+                  fontWeight="bold"
+                  letterSpacing="2"
+                  opacity="0.9"
+                >
+                  SIWALIK SANDSTONE & MOLASSE (200m - 1,200m)
+                </text>
+                <text
+                  x="735"
+                  y="1092"
+                  textAnchor="middle"
+                  fill="#cbd5e1"
+                  fontSize="9.5"
+                  fontFamily="monospace"
+                  letterSpacing="2"
+                  opacity="0.85"
+                >
+                  LESSER HIMALAYAN CARBONATES & SLATE (1,200m - 3,500m)
+                </text>
+                <text
+                  x="735"
+                  y="1135"
+                  textAnchor="middle"
+                  fill="#94a3b8"
+                  fontSize="9.5"
+                  fontFamily="monospace"
+                  letterSpacing="2"
+                  opacity="0.8"
+                >
+                  CRYSTALLINE BASEMENT • MAIN HIMALAYAN THRUST (MHT)
+                </text>
+              </g>
+            )}
+
+            {/* =========================================================================
+                AUTHENTIC TOPOGRAPHIC RELIEF MAP OF UTTARAKHAND
+                Filtered with Unsharp Mask to eliminate raster blurring on zoom!
+                ========================================================================= */}
             <image
               href="/uttarakhand_physical_map_glowing.png"
               x="0"
@@ -531,8 +825,141 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
               width="1470"
               height="1230"
               preserveAspectRatio="xMidYMid meet"
+              filter="url(#crispTerrainFilter)"
+              style={{
+                imageRendering: "-webkit-optimize-contrast",
+              }}
               className="pointer-events-none"
             />
+
+            {/* =========================================================================
+                CRISP VECTOR HIMALAYAN RIVER SYSTEM (NEVER BLURS AT ANY ZOOM LEVEL!)
+                ========================================================================= */}
+            <g className="pointer-events-none select-none" opacity="0.85">
+              {/* Alaknanda / Ganga River Spine (Badrinath -> Devprayag -> Haridwar) */}
+              <path
+                d="M 870,505 Q 920,520 955,535 Q 920,560 880,580 Q 850,600 820,620 Q 790,615 760,610 Q 695,625 630,640 Q 550,635 480,630 Q 465,655 450,680 Q 430,750 410,850"
+                fill="none"
+                stroke="#38bdf8"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                filter="drop-shadow(0 0 3px rgba(56, 189, 248, 0.6))"
+              />
+              <path
+                d="M 870,505 Q 920,520 955,535 Q 920,560 880,580 Q 850,600 820,620 Q 790,615 760,610 Q 695,625 630,640 Q 550,635 480,630 Q 465,655 450,680 Q 430,750 410,850"
+                fill="none"
+                stroke="#e0f2fe"
+                strokeWidth="0.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+
+              {/* Bhagirathi River (Gangotri -> Uttarkashi -> Tehri -> Devprayag) */}
+              <path
+                d="M 760,440 Q 690,460 620,480 Q 600,530 580,580 Q 605,610 630,640"
+                fill="none"
+                stroke="#38bdf8"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+
+              {/* Mandakini River (Kedarnath -> Guptkashi -> Rudraprayag) */}
+              <path
+                d="M 745,520 Q 748,560 750,575 Q 755,595 760,610"
+                fill="none"
+                stroke="#38bdf8"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+
+              {/* Yamuna River (Yamunotri -> Barkot -> Doon) */}
+              <path
+                d="M 580,420 Q 550,445 520,470 Q 465,490 410,510 Q 370,540 330,600"
+                fill="none"
+                stroke="#38bdf8"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+
+              {/* Kali / Sharda Eastern Border River (Pithoragarh -> Champawat -> Tanakpur) */}
+              <path
+                d="M 1220,580 Q 1200,625 1180,670 Q 1145,720 1110,770 Q 1095,800 1080,830 Q 1065,870 1050,910 Q 1030,960 1010,1020"
+                fill="none"
+                stroke="#38bdf8"
+                strokeWidth="2.0"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+
+              {/* Kosi / Ramganga River (Almora -> Corbett -> Ramnagar) */}
+              <path
+                d="M 890,795 Q 830,830 770,860 Q 765,880 770,890 Q 760,940 740,1000"
+                fill="none"
+                stroke="#38bdf8"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </g>
+
+            {/* =========================================================================
+                CRISP TOPOGRAPHIC CONTOUR LINES (VECTOR DETAIL THAT NEVER BLURS)
+                ========================================================================= */}
+            {showContours && (
+              <g className="pointer-events-none select-none" opacity="0.45">
+                {/* 1,000m Shivalik Contour */}
+                <path
+                  d="M 320,680 Q 520,720 700,750 Q 880,870 1080,880"
+                  fill="none"
+                  stroke="#94a3b8"
+                  strokeWidth="0.8"
+                  strokeDasharray="4,4"
+                />
+                <text x="350" y="692" fill="#94a3b8" fontSize="8" fontFamily="monospace">
+                  1,000m
+                </text>
+
+                {/* 2,500m Lesser Himalayan Contour */}
+                <path
+                  d="M 420,540 Q 620,600 800,640 Q 980,720 1140,730"
+                  fill="none"
+                  stroke="#38bdf8"
+                  strokeWidth="0.9"
+                  strokeDasharray="6,4"
+                />
+                <text x="450" y="552" fill="#38bdf8" fontSize="8" fontFamily="monospace">
+                  2,500m
+                </text>
+
+                {/* 4,500m High Himalayan Snowline Contour */}
+                <path
+                  d="M 520,440 Q 720,490 900,510 Q 1050,570 1200,580"
+                  fill="none"
+                  stroke="#e0f2fe"
+                  strokeWidth="1.0"
+                  strokeDasharray="8,4"
+                />
+                <text x="540" y="452" fill="#e0f2fe" fontSize="8" fontFamily="monospace">
+                  4,500m
+                </text>
+
+                {/* 6,000m Glacial Glaciation Crest Line */}
+                <path
+                  d="M 700,430 Q 840,460 960,480 Q 1080,540 1160,560"
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeWidth="1.2"
+                  strokeDasharray="10,5"
+                />
+                <text x="710" y="442" fill="#ffffff" fontSize="8" fontFamily="monospace">
+                  6,000m
+                </text>
+              </g>
+            )}
 
             {/* Diagonal NISAR Ground Track 106 Descending Corridor */}
             <g opacity="0.4" className="pointer-events-none">
@@ -563,7 +990,94 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
               </text>
             </g>
 
-            {/* Prominent City Pins (36 Verified Locations) */}
+            {/* =========================================================================
+                3D HIGH HIMALAYAN MOUNTAIN SUMMITS (FACETED RIDGES & ARÊTES)
+                ========================================================================= */}
+            {showPeaks && (
+              <g className="pointer-events-none select-none">
+                {HIMALAYAN_SUMMITS.map((summit, idx) => {
+                  const s = summit.size / 24;
+                  return (
+                    <g
+                      key={`summit-${idx}`}
+                      transform={`translate(${summit.x}, ${summit.y})`}
+                    >
+                      {/* Mountain Cast Shadow towards SE */}
+                      <polygon
+                        points={`0,0 ${15 * s},${13 * s} ${30 * s},${18 * s} ${-5 * s},${9 * s}`}
+                        fill="rgba(0, 0, 0, 0.55)"
+                        filter="blur(2.5px)"
+                      />
+
+                      {/* NW Sunlit Snow Glaciation Face */}
+                      <polygon
+                        points={`0,${-15 * s} ${-15 * s},${9 * s} 0,${11 * s}`}
+                        fill="#f8fafc"
+                        stroke="#e2e8f0"
+                        strokeWidth="0.8"
+                      />
+                      {/* SE Granite / Gneiss Leeward Shaded Face */}
+                      <polygon
+                        points={`0,${-15 * s} 0,${11 * s} ${15 * s},${9 * s}`}
+                        fill="#475569"
+                        stroke="#334155"
+                        strokeWidth="0.8"
+                      />
+                      {/* Central Sharp Ridge Crest Arête */}
+                      <line
+                        x1="0"
+                        y1={-15 * s}
+                        x2="0"
+                        y2={11 * s}
+                        stroke="#38bdf8"
+                        strokeWidth="1.2"
+                        opacity="0.9"
+                      />
+
+                      {/* Summit Glint Pinhead */}
+                      <circle
+                        cx="0"
+                        cy={-15 * s}
+                        r="3.2"
+                        fill="#ffffff"
+                        filter="drop-shadow(0 0 5px #38bdf8)"
+                      />
+
+                      {/* Summit Elevation Badge */}
+                      <g transform={`translate(0, ${20 * s})`}>
+                        <rect
+                          x={-(summit.name.length * 4.2 + 26)}
+                          y="-11"
+                          width={(summit.name.length * 4.2 + 26) * 2}
+                          height="17"
+                          rx="4.5"
+                          fill="rgba(2, 6, 23, 0.92)"
+                          stroke={summit.major ? "#38bdf8" : "#64748b"}
+                          strokeWidth="0.9"
+                        />
+                        <text
+                          x="0"
+                          y="1"
+                          textAnchor="middle"
+                          fill="#ffffff"
+                          fontSize="9.5"
+                          fontFamily="monospace"
+                          fontWeight="bold"
+                        >
+                          ▲ {summit.name}{" "}
+                          <tspan fill="#38bdf8">{summit.alt}</tspan>
+                        </text>
+                      </g>
+                    </g>
+                  );
+                })}
+              </g>
+            )}
+
+            {/* =========================================================================
+                PROMINENT CITY PINS (36 VERIFIED LOCATIONS)
+                (Unchecked by default, smooth camera zoom-in upon click)
+                ========================================================================= */}
             {allCitiesList.map((city) => {
               const isSelected = selectedLocationId === city.id;
               const isHovered = hoveredPinId === city.id;
@@ -581,27 +1095,61 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
                   className="cursor-pointer"
                 >
                   {/* Invisible hit-target area */}
-                  <circle cx="0" cy="0" r="28" className="fill-transparent" />
+                  <circle cx="0" cy="0" r="30" className="fill-transparent" />
 
-                  {/* Active Selected Location Glowing Reticle */}
+                  {/* Active Selected Location Glowing Reticle (Only when selected) */}
                   {isSelected && (
                     <g filter="url(#locationReticleGlow)">
+                      {/* Radar Pulse Concentric Waves */}
                       <circle
                         cx="0"
                         cy="0"
-                        r="38"
+                        r="42"
                         className="fill-none stroke-sky-400/80 stroke-[2] animate-ping"
                       />
                       <circle
                         cx="0"
                         cy="0"
-                        r="26"
+                        r="28"
                         className="fill-none stroke-sky-300 stroke-[1.8] stroke-dasharray-[4,4]"
                       />
-                      <line x1="-40" y1="0" x2="-10" y2="0" className="stroke-sky-300 stroke-[2]" />
-                      <line x1="10" y1="0" x2="40" y2="0" className="stroke-sky-300 stroke-[2]" />
-                      <line x1="0" y1="-40" x2="0" y2="-10" className="stroke-sky-300 stroke-[2]" />
-                      <line x1="0" y1="10" x2="0" y2="40" className="stroke-sky-300 stroke-[2]" />
+                      {/* Crosshair Target Calibrators */}
+                      <line
+                        x1="-44"
+                        y1="0"
+                        x2="-10"
+                        y2="0"
+                        className="stroke-sky-300 stroke-[2]"
+                      />
+                      <line
+                        x1="10"
+                        y1="0"
+                        x2="44"
+                        y2="0"
+                        className="stroke-sky-300 stroke-[2]"
+                      />
+                      <line
+                        x1="0"
+                        y1="-44"
+                        x2="0"
+                        y2="-10"
+                        className="stroke-sky-300 stroke-[2]"
+                      />
+                      <line
+                        x1="0"
+                        y1="10"
+                        x2="0"
+                        y2="44"
+                        className="stroke-sky-300 stroke-[2]"
+                      />
+
+                      {/* Bounding AOI Radius Footprint Ring */}
+                      <circle
+                        cx="0"
+                        cy="0"
+                        r="75"
+                        className="fill-sky-500/5 stroke-sky-400/40 stroke-[1] stroke-dasharray-[6,6]"
+                      />
                     </g>
                   )}
 
@@ -609,26 +1157,26 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
                   <circle
                     cx="0"
                     cy="0"
-                    r={isSelected ? 8 : isHovered ? 6 : 4}
+                    r={isSelected ? 8.5 : isHovered ? 6.5 : 4}
                     fill={isSelected ? "#38bdf8" : isHovered ? "#7dd3fc" : "#94a3b8"}
                     stroke="#020408"
                     strokeWidth="1.8"
                     className="transition-all duration-200"
                   />
-                  <circle cx="0" cy="0" r={isSelected ? 3 : 1.5} fill="#ffffff" />
+                  <circle cx="0" cy="0" r={isSelected ? 3.5 : 1.5} fill="#ffffff" />
 
                   {/* City Label Badge */}
                   {(isSelected || isHovered) && (
                     <g transform="translate(14, -14)" className="pointer-events-none">
                       <rect
                         x="-4"
-                        y="-14"
-                        width={city.name.length * 8.5 + 40}
-                        height="20"
+                        y="-15"
+                        width={city.name.length * 8.5 + 46}
+                        height="22"
                         rx="5"
-                        fill="rgba(2, 6, 23, 0.92)"
+                        fill="rgba(2, 6, 23, 0.94)"
                         stroke="#38bdf8"
-                        strokeWidth="1"
+                        strokeWidth="1.2"
                       />
                       <text
                         x="4"
@@ -644,7 +1192,7 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
                         x={city.name.length * 8.5 + 8}
                         y="0"
                         fill="#38bdf8"
-                        fontSize="9"
+                        fontSize="9.5"
                         fontFamily="monospace"
                       >
                         {city.elevation_m}m
@@ -805,15 +1353,21 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
             <div className="p-3 rounded-xl bg-space-900/80 border border-slate-800 text-xs font-mono grid grid-cols-2 sm:grid-cols-4 gap-3 text-slate-300">
               <div>
                 <span className="text-slate-500 block text-[10px]">Target Area:</span>
-                <span className="text-white font-semibold">{currentLocation.name}</span>
+                <span className="text-white font-semibold">
+                  {currentLocation ? currentLocation.name : "None Selected"}
+                </span>
               </div>
               <div>
                 <span className="text-slate-500 block text-[10px]">District:</span>
-                <span className="text-white">{currentLocation.district}</span>
+                <span className="text-white">
+                  {currentLocation ? currentLocation.district : "Uttarakhand"}
+                </span>
               </div>
               <div>
                 <span className="text-slate-500 block text-[10px]">Elevation:</span>
-                <span className="text-emerald-400 font-semibold">{currentLocation.elevation_m}m</span>
+                <span className="text-emerald-400 font-semibold">
+                  {currentLocation ? `${currentLocation.elevation_m}m` : "Relief"}
+                </span>
               </div>
               <div>
                 <span className="text-slate-500 block text-[10px]">Frequency:</span>
@@ -845,12 +1399,27 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
           </span>
           <div>
             <div className="text-xs font-semibold text-white flex items-center gap-2">
-              <span>Target: {currentLocation.name}</span>
-              <span className="text-slate-500">•</span>
-              <span className="text-sky-400">{selectedSector.name}</span>
+              {currentLocation ? (
+                <>
+                  <span>Target: {currentLocation.name}</span>
+                  <span className="text-slate-500">•</span>
+                  <span className="text-sky-400">{selectedSector.name}</span>
+                </>
+              ) : (
+                <span className="text-amber-300 font-medium flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                  Select a city or area on the map or menu to calibrate SAR telemetry
+                </span>
+              )}
             </div>
             <div className="text-[10px] text-slate-400 font-mono hidden sm:block">
-              Temporal Pair: {startDate} ➔ {endDate} • Product: {selectedSector.code}
+              {currentLocation ? (
+                <>
+                  Temporal Pair: {startDate} ➔ {endDate} • Product: {selectedSector.code} ({comparisonStrategy})
+                </>
+              ) : (
+                <>36 Verified High-Resolution AOIs Available in Uttarakhand</>
+              )}
             </div>
           </div>
         </div>
@@ -864,13 +1433,24 @@ export default function UttarakhandMap({ showResultLayer = false }: UttarakhandM
         {/* Right: PRIMARY ACTION BUTTON */}
         <button
           onClick={handleRunAnalysis}
-          disabled={isAnalyzing}
-          className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 via-sky-400 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-slate-950 font-bold font-mono text-xs uppercase tracking-wider flex items-center gap-2.5 shadow-[0_0_20px_rgba(56,189,248,0.5)] hover:shadow-[0_0_30px_rgba(56,189,248,0.85)] transition-all transform hover:scale-[1.02] cursor-pointer disabled:opacity-50"
+          disabled={isAnalyzing || !currentLocation}
+          className={`px-6 py-2.5 rounded-xl font-bold font-mono text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all transform ${
+            !currentLocation
+              ? "bg-slate-800 text-slate-500 border border-slate-700/60 cursor-not-allowed opacity-60"
+              : isAnalyzing
+              ? "bg-sky-600 text-slate-900 cursor-wait opacity-80"
+              : "bg-gradient-to-r from-sky-500 via-sky-400 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-slate-950 shadow-[0_0_20px_rgba(56,189,248,0.5)] hover:shadow-[0_0_30px_rgba(56,189,248,0.85)] hover:scale-[1.02] cursor-pointer"
+          }`}
         >
           {isAnalyzing ? (
             <>
               <div className="w-4 h-4 rounded-full border-2 border-slate-950 border-t-transparent animate-spin" />
               <span>CALIBRATING RADAR...</span>
+            </>
+          ) : !currentLocation ? (
+            <>
+              <MapPin className="w-4 h-4 text-amber-400" />
+              <span>SELECT CITY TO ANALYZE</span>
             </>
           ) : (
             <>

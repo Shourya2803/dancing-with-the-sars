@@ -22,6 +22,7 @@ from app.services.observation_service import ObservationService, ObservationEval
 from app.services.storage_service import StorageService
 from app.services.db_service import db_service, DBService
 from app.services.gemini_service import GeminiService
+from app.services.sar_cache_service import sar_cache_service
 from app.config.settings import settings
 
 
@@ -48,7 +49,10 @@ class ProcessingService:
         start_date: str,
         end_date: str,
         analysis_type: str = "surface_change",
-        comparison_strategy: str = "first_vs_last"
+        comparison_strategy: str = "first_vs_last",
+        location_name: Optional[str] = None,
+        sector: Optional[str] = None,
+        sector_name: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Executes the full scientific analysis pipeline asynchronously.
@@ -147,7 +151,8 @@ class ProcessingService:
             sec_obs=sec_obs,
             product_type=product_req,
             aoi_geojson=aoi_geom,
-            district_name=district_name
+            district_name=district_name,
+            location_name=location_name
         )
 
         # 5. Scientific Processing
@@ -193,7 +198,10 @@ class ProcessingService:
             analysis_context = {
                 "region": region,
                 "district": district_name,
+                "location_name": location_name,
                 "analysis_type": analysis_type,
+                "sector": sector or analysis_type,
+                "sector_name": sector_name,
                 "start_date": start_date,
                 "end_date": end_date
             }
@@ -230,6 +238,9 @@ class ProcessingService:
                 "status": "completed",
                 "region": region,
                 "district": district_name,
+                "sector": sector,
+                "sector_name": sector_name,
+                "analysis_type": analysis_type,
                 "requested_period": {"start": start_date, "end": end_date},
                 "observations_used": [
                     {
@@ -312,85 +323,15 @@ class ProcessingService:
         sec_obs: Dict[str, Any],
         product_type: str,
         aoi_geojson: Optional[Dict[str, Any]] = None,
-        district_name: Optional[str] = None
+        district_name: Optional[str] = None,
+        location_name: Optional[str] = None
     ) -> Tuple[str, str]:
-        """Resolves local data files for processing, dynamically sizing to match the target AOI."""
-        from scripts.generate_sample_nisar_h5 import create_sample_gcov_h5, create_sample_gunw_h5
-
-        cache_dir = settings.DATA_CACHE_DIR
-        os.makedirs(cache_dir, exist_ok=True)
-
-        id1 = base_obs.get("granule_id", "obs1")
-        id2 = sec_obs.get("granule_id", "obs2")
-
-        # Default fallback coordinates centered on Chamoli
-        origin_x = 350000.0
-        origin_y = 3380000.0
-        grid_shape = (256, 256)
-        pixel_spacing = 80.0
-        loc_suffix = (district_name or "default").lower().replace(" ", "_")
-
-        # Dynamically compute UTM 44N (EPSG:32644) grid extent from requested AOI geometry
-        if aoi_geojson:
-            try:
-                from rasterio.warp import transform_geom
-                from shapely.geometry import shape
-
-                reprojected = transform_geom("EPSG:4326", "EPSG:32644", aoi_geojson)
-                aoi_poly = shape(reprojected)
-                min_x, min_y, max_x, max_y = aoi_poly.bounds
-                pad = 4000.0  # 4 km padding around target AOI
-                pad_min_x = min_x - pad
-                pad_max_x = max_x + pad
-                pad_min_y = min_y - pad
-                pad_max_y = max_y + pad
-
-                cols = max(64, int(np.ceil((pad_max_x - pad_min_x) / pixel_spacing)))
-                rows = max(64, int(np.ceil((pad_max_y - pad_min_y) / pixel_spacing)))
-
-                # Cap maximum grid dimensions to keep offline processing fast
-                if cols > 384 or rows > 384:
-                    scale = max(cols / 384.0, rows / 384.0)
-                    pixel_spacing *= scale
-                    cols = int(np.ceil((pad_max_x - pad_min_x) / pixel_spacing))
-                    rows = int(np.ceil((pad_max_y - pad_min_y) / pixel_spacing))
-
-                origin_x = float(pad_min_x)
-                origin_y = float(pad_max_y)
-                grid_shape = (rows, cols)
-            except Exception as e:
-                logger.warning(f"Could not calculate dynamic AOI bounds: {e}")
-
-        p1 = os.path.join(cache_dir, f"{id1}_{loc_suffix}.h5")
-        p2 = os.path.join(cache_dir, f"{id2}_{loc_suffix}.h5")
-
-        center_r = grid_shape[0] // 2
-        center_c = grid_shape[1] // 2
-
-        if product_type == "GUNW":
-            if not os.path.exists(p1):
-                create_sample_gunw_h5(
-                    p1, id1,
-                    origin_x=origin_x, origin_y=origin_y,
-                    grid_shape=grid_shape, pixel_spacing=pixel_spacing,
-                    displacement_feature=True,
-                    feature_center=(center_r, center_c)
-                )
-            return p1, p1
-        else:
-            if not os.path.exists(p1):
-                create_sample_gcov_h5(
-                    p1, id1,
-                    origin_x=origin_x, origin_y=origin_y,
-                    grid_shape=grid_shape, pixel_spacing=pixel_spacing,
-                    change_feature=False
-                )
-            if not os.path.exists(p2):
-                create_sample_gcov_h5(
-                    p2, id2,
-                    origin_x=origin_x, origin_y=origin_y,
-                    grid_shape=grid_shape, pixel_spacing=pixel_spacing,
-                    change_feature=True, feature_delta_db=-5.5,
-                    feature_center=(center_r, center_c)
-                )
-            return p1, p2
+        """Resolves local data files via the authoritative SARCacheService."""
+        return sar_cache_service.resolve_product_files(
+            base_obs=base_obs,
+            sec_obs=sec_obs,
+            product_type=product_type,
+            aoi_geojson=aoi_geojson,
+            district_name=district_name,
+            location_name=location_name
+        )

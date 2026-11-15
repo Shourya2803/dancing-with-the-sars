@@ -11,9 +11,9 @@ import { soundController } from "@/lib/audio";
 interface JourneyContextType {
   stage: JourneyStage;
   setStage: (stage: JourneyStage) => void;
-  selectedLocation: string;
-  setSelectedLocation: (locationId: string) => void;
-  currentLocationDetail: LocationDetail;
+  selectedLocation: string | null;
+  setSelectedLocation: (locationId: string | null) => void;
+  currentLocationDetail: LocationDetail | null;
   selectedDistrict: string;
   setSelectedDistrict: (districtId: string) => void;
   currentDistrictDetail: DistrictDetail;
@@ -64,7 +64,7 @@ export const STAGES_ORDER: JourneyStage[] = [
 
 export function JourneyProvider({ children }: { children: ReactNode }) {
   const [stage, setStage] = useState<JourneyStage>("space");
-  const [selectedLocation, setSelectedLocation] = useState<string>(DEFAULT_CITY_ID);
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [selectedSector, setSelectedSector] = useState<AnalysisSector>(ANALYSIS_SECTORS[0]);
   const [startDate, setStartDate] = useState<string>("2025-11-15");
   const [endDate, setEndDate] = useState<string>("2025-12-05");
@@ -111,19 +111,22 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
     setReducedMotion((prev) => !prev);
   };
 
-  // Resolved Current Location
-  const currentLocationDetail: LocationDetail =
-    getCityById(selectedLocation) || UTTARAKHAND_CITIES[DEFAULT_CITY_ID];
+  // Resolved Current Location (null if no city selected yet)
+  const currentLocationDetail: LocationDetail | null = selectedLocation
+    ? getCityById(selectedLocation) || null
+    : null;
 
-  // Backward compatibility: Derive district from selected city
-  const districtKey = currentLocationDetail.district.toLowerCase().replace(/\s+/g, "_");
+  // Derive district from selected city (fallback to chamoli if none selected)
+  const districtKey = currentLocationDetail
+    ? currentLocationDetail.district.toLowerCase().replace(/\s+/g, "_")
+    : "chamoli";
   const currentDistrictDetail =
     UTTARAKHAND_DISTRICTS[districtKey] || UTTARAKHAND_DISTRICTS["chamoli"];
 
   const setSelectedDistrict = (distId: string) => {
     // When district is selected, find first matching city in that district only if not already in it
     const normDist = distId.toLowerCase().replace(/_/g, " ");
-    if (currentLocationDetail.district.toLowerCase() === normDist) {
+    if (currentLocationDetail && currentLocationDetail.district.toLowerCase() === normDist) {
       return;
     }
     const matchingCity = Object.values(UTTARAKHAND_CITIES).find(
@@ -135,6 +138,10 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
   };
 
   const executeAnalysis = async () => {
+    if (!currentLocationDetail) {
+      setError("Please select a target city or area first.");
+      return;
+    }
     setIsAnalyzing(true);
     setError(null);
     setStage("analyzing");
@@ -185,6 +192,7 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
 
   const resetToStart = () => {
     setStage("space");
+    setSelectedLocation(null);
     setAnalysisResult(null);
     setError(null);
   };

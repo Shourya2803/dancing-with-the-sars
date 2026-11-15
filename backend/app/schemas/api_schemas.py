@@ -60,6 +60,8 @@ class AnalysisCreateRequest(BaseModel):
     aoi_geometry: Optional[Dict[str, Any]] = Field(default=None, description="Custom GeoJSON Polygon or MultiPolygon")
     start_date: str = Field(..., description="Requested start date (YYYY-MM-DD)")
     end_date: str = Field(..., description="Requested end date (YYYY-MM-DD)")
+    sector: Optional[str] = Field(default="terrain_surface", description="Observation sector identifier (e.g. 'terrain_surface', 'forest_canopy', 'water_wetlands')")
+    sector_name: Optional[str] = Field(default=None, description="Observation sector display name")
     analysis_type: str = Field(
         default="surface_change",
         description="Scientific analysis type ('surface_change' for GCOV RTC backscatter, 'insar_deformation' for GUNW)"
@@ -77,6 +79,9 @@ class AnalysisResponse(BaseModel):
     location: Optional[LocationRef] = None
     location_name: Optional[str] = None
     district: Optional[str] = None
+    sector: Optional[str] = None
+    sector_name: Optional[str] = None
+    analysis_type: Optional[str] = None
     requested_period: RequestedPeriod
     observations_used: List[ObservationSummary] = []
     result: Optional[ScientificResultPayload] = None

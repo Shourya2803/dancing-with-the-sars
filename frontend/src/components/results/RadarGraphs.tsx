@@ -1,16 +1,108 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { BarChart3, PieChart, Activity, Info, Zap, AlertTriangle, Layers } from "lucide-react";
+import { BarChart3, PieChart, Activity, Info, Zap, AlertTriangle, Layers, Trees, Snowflake, Droplets, Mountain } from "lucide-react";
 import { AnalysisResponse } from "@/types/api";
 
 interface RadarGraphsProps {
   analysis: AnalysisResponse;
+  sectorId?: string;
 }
 
-export default function RadarGraphs({ analysis }: RadarGraphsProps) {
+export default function RadarGraphs({ analysis, sectorId }: RadarGraphsProps) {
   const [activeChart, setActiveChart] = useState<"histogram" | "donut" | "quantiles">("histogram");
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
+
+  const activeSectorId = sectorId || (analysis as any).analysis_type || (analysis as any).sector || "terrain_surface";
+  const isForest =
+    activeSectorId === "forest_canopy" ||
+    activeSectorId === "forestry" ||
+    activeSectorId === "forest" ||
+    activeSectorId === "biomass";
+  const isGlacier =
+    activeSectorId === "glacier_cryosphere" ||
+    activeSectorId === "glacier" ||
+    activeSectorId === "cryosphere" ||
+    activeSectorId === "ice";
+  const isFlood =
+    activeSectorId === "water_wetlands" ||
+    activeSectorId === "flood" ||
+    activeSectorId === "hydrology" ||
+    activeSectorId === "inundation";
+  const isTectonic = !isForest && !isGlacier && !isFlood;
+
+  // Sector Configuration & Domain Physics
+  const sectorConfig = isForest
+    ? {
+        name: "Forest Canopy & Biomass Analytics",
+        badge: "FORESTRY • HV CROSS-POL",
+        badgeColor: "bg-emerald-950 text-emerald-300 border-emerald-800",
+        metricChannel: "HV-Pol Cross-Polarization Volume Scattering",
+        xLabel: "-8.0 dB (Canopy Loss) ➔ 0 dB (Nominal Canopy) ➔ +6.0 dB (Regrowth)",
+        negLabel: "Canopy Clearing / Defoliation (≤ -3.0 dB)",
+        negDesc: "Severe volume scattering loss indicating canopy disturbance or logging",
+        stableLabel: "Stable Intact Tree Canopy (|Δ| < 3.0 dB)",
+        posLabel: "Vegetation Regrowth / Moisture (≥ +3.0 dB)",
+        posDesc: "Increased secondary branch scattering or seasonal foliage density increase",
+        donutNeg: "Canopy Disturbance",
+        donutStable: "Intact Dense Canopy",
+        donutPos: "Biomass Accretion",
+        thresholdDesc:
+          "In forestry SAR, |Δγ⁰| ≥ 3.0 dB denotes volumetric backscatter shifts directly correlating to tree canopy density changes and defoliation in Uttarakhand's forest reserves.",
+      }
+    : isGlacier
+    ? {
+        name: "Cryospheric Moraine & Ablation Analytics",
+        badge: "CRYOSPHERE • CO-POL",
+        badgeColor: "bg-sky-950 text-sky-300 border-sky-800",
+        metricChannel: "Co-Pol Cryospheric Backscatter",
+        xLabel: "-8.0 dB (Liquid Melt / Ablation) ➔ 0 dB (Glacial Firn) ➔ +6.0 dB (Surface Roughness)",
+        negLabel: "Ablation / Wet Snow Melting (≤ -3.0 dB)",
+        negDesc: "Liquid water in snowpack causing severe microwave dielectric absorption",
+        stableLabel: "Stable Glacial Ice & Permafrost (|Δ| < 3.0 dB)",
+        posLabel: "Ice Roughening / Serac Calving (≥ +3.0 dB)",
+        posDesc: "Crevasse displacement, serac collapse, or supraglacial moraine debris accretion",
+        donutNeg: "Ablation & Melt Zone",
+        donutStable: "Stable Glacial Ice",
+        donutPos: "Supraglacial Debris Shift",
+        thresholdDesc:
+          "Cryospheric SAR thresholds filter dry snow penetration from active liquid meltwater attenuation (|Δγ⁰| ≥ 3.0 dB) along high Himalayan glaciers.",
+      }
+    : isFlood
+    ? {
+        name: "Hydrology & Specular Inundation Analytics",
+        badge: "HYDROLOGY • SPECULAR SAR",
+        badgeColor: "bg-blue-950 text-blue-300 border-blue-800",
+        metricChannel: "Specular Deflection Attenuation",
+        xLabel: "-8.0 dB (Standing Water) ➔ 0 dB (Dry Terrestrial Ground) ➔ +6.0 dB (Wetland Debris)",
+        negLabel: "Standing Water / Inundation (≤ -3.0 dB)",
+        negDesc: "Smooth water surface deflecting radar pulses away from satellite receiver",
+        stableLabel: "Unflooded Dry Ground (|Δ| < 3.0 dB)",
+        posLabel: "Emergent Wetland / Flood Debris (≥ +3.0 dB)",
+        posDesc: "Double-bounce scattering from emergent vegetation or flood debris",
+        donutNeg: "Inundated Area",
+        donutStable: "Unflooded Dry Ground",
+        donutPos: "Saturated Wetland Zone",
+        thresholdDesc:
+          "Specular deflection thresholds detect standing flood extent through stark backscatter drops (≤ -3.0 dB) across river basins.",
+      }
+    : {
+        name: "Terrain Roughness & Tectonic Analytics",
+        badge: "TECTONIC • GCOV-RTC",
+        badgeColor: "bg-amber-950 text-amber-300 border-amber-800",
+        metricChannel: "Radiometrically Terrain-Corrected Backscatter",
+        xLabel: "-8.0 dB (Regolith Mass-Wasting) ➔ 0 dB (Stable Bedrock) ➔ +6.0 dB (Colluvial Debris)",
+        negLabel: "Slope Subsidence / Regolith Failure (≤ -3.0 dB)",
+        negDesc: "Smoothing from slope collapse, scour, or regolith slip",
+        stableLabel: "Stable Rock Mass (|Δ| < 3.0 dB)",
+        posLabel: "Colluvial Debris Accumulation (≥ +3.0 dB)",
+        posDesc: "Surface roughening from boulder falls and colluvial toe accumulation",
+        donutNeg: "Unstable Slope Failure",
+        donutStable: "Stable Bedrock",
+        donutPos: "Debris Toe Accretion",
+        thresholdDesc:
+          "Tectonic slope thresholds identify ground displacement and rockfall events exceeding 2× power variance (|Δγ⁰| ≥ 3.0 dB) along active Himalayan fault planes.",
+      };
 
   const result = analysis.result as any;
   const stats = result?.statistics || {
@@ -35,7 +127,10 @@ export default function RadarGraphs({ analysis }: RadarGraphsProps) {
   const negPct = dist.negative_change?.percentage ?? 8.1;
   const posPct = dist.positive_change?.percentage ?? 3.5;
   const stablePct = dist.stable?.percentage ?? 88.4;
-  const totalArea = ((dist.negative_change?.area_km2 || 0) + (dist.positive_change?.area_km2 || 0) + (dist.stable?.area_km2 || 0)) || 3338.9;
+  const totalArea =
+    (dist.negative_change?.area_km2 || 0) +
+      (dist.positive_change?.area_km2 || 0) +
+      (dist.stable?.area_km2 || 0) || 3338.9;
 
   // Generate synthetic Gaussian-distributed histogram bins matching real calculated moments
   const histogramBins = useMemo(() => {
@@ -47,25 +142,23 @@ export default function RadarGraphs({ analysis }: RadarGraphsProps) {
     const std = stats.std_db || 2.05;
 
     for (let x = minX; x <= maxX; x += step) {
-      // Gaussian probability density
       const exponent = -Math.pow(x - mean, 2) / (2 * Math.pow(std, 2));
       let height = (1 / (std * Math.sqrt(2 * Math.PI))) * Math.exp(exponent) * 1000;
 
-      // Add skew/kurtosis for realistic radar tails
       if (x <= -3.0) {
-        height += (negPct * 12);
+        height += negPct * 12;
       } else if (x >= 3.0) {
-        height += (posPct * 8);
+        height += posPct * 8;
       }
 
       let color = "#38bdf8"; // Stable cyan
-      let label = "Stable Baseline";
+      let label = sectorConfig.stableLabel;
       if (x <= -3.0) {
         color = "#f43f5e"; // Rose / negative change
-        label = "Significant Smoothing / Wet Snow";
+        label = sectorConfig.negLabel;
       } else if (x >= 3.0) {
         color = "#f59e0b"; // Amber / positive change
-        label = "Significant Roughening / Debris";
+        label = sectorConfig.posLabel;
       }
 
       bins.push({
@@ -76,7 +169,7 @@ export default function RadarGraphs({ analysis }: RadarGraphsProps) {
       });
     }
     return bins;
-  }, [stats, negPct, posPct]);
+  }, [stats, negPct, posPct, sectorConfig]);
 
   const maxBinCount = Math.max(...histogramBins.map((b) => b.count), 1);
 
@@ -90,22 +183,35 @@ export default function RadarGraphs({ analysis }: RadarGraphsProps) {
   return (
     <div className="rounded-2xl bg-space-900/90 border border-slate-700/80 p-5 backdrop-blur-xl shadow-xl space-y-4">
       {/* Header and Chart Switcher */}
-      <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
+        <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-sky-950 border border-sky-500/50 flex items-center justify-center text-sky-400">
-            <BarChart3 className="w-4 h-4" />
+            {isForest ? (
+              <Trees className="w-4 h-4 text-emerald-400" />
+            ) : isGlacier ? (
+              <Snowflake className="w-4 h-4 text-sky-400" />
+            ) : isFlood ? (
+              <Droplets className="w-4 h-4 text-blue-400" />
+            ) : (
+              <BarChart3 className="w-4 h-4 text-amber-400" />
+            )}
           </div>
           <div>
-            <h3 className="text-xs font-mono font-semibold text-sky-300 uppercase tracking-wider">
-              Radar Telemetry & Variance Analytics
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-xs font-mono font-semibold text-sky-300 uppercase tracking-wider">
+                {sectorConfig.name}
+              </h3>
+              <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono border ${sectorConfig.badgeColor}`}>
+                {sectorConfig.badge}
+              </span>
+            </div>
             <p className="text-[10px] text-slate-400 font-mono">
-              Empirical backscatter distribution (Δγ⁰ dB) over {analysis.district || "Target AOI"}
+              Empirical backscatter distribution over {analysis.location_name || analysis.district || "Target AOI"}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1 bg-space-950 p-1 rounded-xl border border-slate-800 text-[11px] font-mono">
+        <div className="flex items-center gap-1 bg-space-950 p-1 rounded-xl border border-slate-800 text-[11px] font-mono self-start sm:self-auto">
           <button
             onClick={() => setActiveChart("histogram")}
             className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
@@ -146,11 +252,13 @@ export default function RadarGraphs({ analysis }: RadarGraphsProps) {
         <div className="space-y-3">
           <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
             <span>Probability Density Function [Δγ⁰]</span>
-            <span className="text-sky-300">Mean: {stats.mean_db?.toFixed(2)} dB • σ: ±{stats.std_db?.toFixed(2)} dB</span>
+            <span className="text-sky-300">
+              Mean: {stats.mean_db?.toFixed(2)} dB • σ: ±{stats.std_db?.toFixed(2)} dB
+            </span>
           </div>
 
           {/* SVG Histogram */}
-          <div className="relative h-48 w-full bg-space-950/90 rounded-xl border border-slate-800/80 p-3 flex flex-col justify-end overflow-hidden">
+          <div className="relative h-48 w-full bg-space-950/90 rounded-xl border border-slate-800/80 p-3 flex flex-col justify-end overflow-hidden shadow-inner">
             {/* Background Grid Lines */}
             <div className="absolute inset-0 flex flex-col justify-between p-3 pointer-events-none opacity-15">
               <div className="w-full border-b border-dashed border-slate-400" />
@@ -177,7 +285,7 @@ export default function RadarGraphs({ analysis }: RadarGraphsProps) {
               </span>
             </div>
 
-            {/* Zero Nominal Centerline */}
+            {/* Zero Centerline */}
             <div
               className="absolute top-2 bottom-6 border-l border-sky-400/40 z-10 pointer-events-none"
               style={{ left: "55%" }}
@@ -201,8 +309,12 @@ export default function RadarGraphs({ analysis }: RadarGraphsProps) {
                     className="flex-1 h-full flex flex-col justify-end items-center group cursor-pointer relative"
                   >
                     {isHovered && (
-                      <div className="absolute -top-10 z-30 px-2 py-1 rounded bg-space-900 border border-slate-700 text-[10px] font-mono text-white shadow-xl whitespace-nowrap">
-                        <span className="font-bold text-sky-300">{bin.db > 0 ? `+${bin.db}` : bin.db} dB</span>: {bin.count} pixels
+                      <div className="absolute -top-12 z-30 px-2 py-1 rounded bg-space-900 border border-slate-700 text-[10px] font-mono text-white shadow-xl whitespace-nowrap">
+                        <span className="font-bold text-sky-300">
+                          {bin.db > 0 ? `+${bin.db}` : bin.db} dB
+                        </span>
+                        : {bin.count} pixels
+                        <div className="text-[9px] text-slate-400">{bin.label}</div>
                       </div>
                     )}
                     <div
@@ -221,47 +333,46 @@ export default function RadarGraphs({ analysis }: RadarGraphsProps) {
 
             {/* X-axis labels */}
             <div className="flex justify-between items-center text-[9px] font-mono text-slate-500 pt-2 border-t border-slate-800">
-              <span>-8.0 dB (Inundation/Snowmelt)</span>
-              <span>0 dB (Stable)</span>
-              <span>+6.0 dB (Debris/Roughness)</span>
+              <span>{sectorConfig.xLabel.split(" ➔ ")[0]}</span>
+              <span>{sectorConfig.xLabel.split(" ➔ ")[1]}</span>
+              <span>{sectorConfig.xLabel.split(" ➔ ")[2]}</span>
             </div>
           </div>
 
-          {/* Histogram Legend */}
-          <div className="grid grid-cols-3 gap-2 text-[10px] font-mono">
+          {/* Dynamic Histogram Legend */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] font-mono">
             <div className="p-2 rounded-lg bg-rose-950/30 border border-rose-500/30 text-rose-300 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-rose-500" />
-              <span>Negative (&le; -3dB): {negPct.toFixed(1)}%</span>
+              <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+              <span className="truncate">
+                {sectorConfig.donutNeg}: {negPct.toFixed(1)}%
+              </span>
             </div>
             <div className="p-2 rounded-lg bg-sky-950/30 border border-sky-500/30 text-sky-300 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-sky-400" />
-              <span>Stable (|&Delta;|&lt;3dB): {stablePct.toFixed(1)}%</span>
+              <span className="w-2 h-2 rounded-full bg-sky-400 shrink-0" />
+              <span className="truncate">
+                {sectorConfig.donutStable}: {stablePct.toFixed(1)}%
+              </span>
             </div>
             <div className="p-2 rounded-lg bg-amber-950/30 border border-amber-500/30 text-amber-300 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-500" />
-              <span>Positive (&ge; +3dB): {posPct.toFixed(1)}%</span>
+              <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+              <span className="truncate">
+                {sectorConfig.donutPos}: {posPct.toFixed(1)}%
+              </span>
             </div>
           </div>
         </div>
       )}
 
       {/* =========================================================================
-          VIEW 2: DONUT / AREA BREAKDOWN
+          VIEW 2: DONUT / SECTOR AREA BREAKDOWN
           ========================================================================= */}
       {activeChart === "donut" && (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row items-center justify-around gap-6 p-4 rounded-xl bg-space-950/90 border border-slate-800">
             {/* SVG Donut */}
-            <div className="relative w-40 h-40 flex items-center justify-center">
+            <div className="relative w-40 h-40 flex items-center justify-center shrink-0">
               <svg className="w-full h-full transform -rotate-90" viewBox="0 0 160 160">
-                <circle
-                  cx="80"
-                  cy="80"
-                  r={radius}
-                  className="stroke-slate-800"
-                  strokeWidth="18"
-                  fill="transparent"
-                />
+                <circle cx="80" cy="80" r={radius} className="stroke-slate-800" strokeWidth="18" fill="transparent" />
                 {/* Stable Segment */}
                 <circle
                   cx="80"
@@ -298,26 +409,22 @@ export default function RadarGraphs({ analysis }: RadarGraphsProps) {
               </svg>
               {/* Inner Center Label */}
               <div className="absolute flex flex-col items-center justify-center text-center">
-                <span className="text-xs font-mono font-bold text-white">
-                  {((negPct + posPct)).toFixed(1)}%
-                </span>
-                <span className="text-[9px] font-mono text-slate-400 uppercase tracking-wider">
-                  Net Anomaly
-                </span>
+                <span className="text-xs font-mono font-bold text-white">{(negPct + posPct).toFixed(1)}%</span>
+                <span className="text-[9px] font-mono text-slate-400 uppercase tracking-wider">Net Shift</span>
               </div>
             </div>
 
-            {/* Area Breakdown Rows */}
-            <div className="space-y-2.5 text-xs font-mono flex-1">
+            {/* Dynamic Sector Area Rows */}
+            <div className="space-y-2.5 text-xs font-mono flex-1 w-full">
               <div className="flex items-center justify-between pb-1.5 border-b border-slate-800">
-                <span className="text-slate-400">Total Analyzed AOI:</span>
+                <span className="text-slate-400">Total AOI Coverage:</span>
                 <span className="text-white font-bold">{totalArea.toFixed(1)} km²</span>
               </div>
 
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-rose-400">
-                  <span className="w-2.5 h-2.5 rounded bg-rose-500" />
-                  Negative Attenuation:
+                  <span className="w-2.5 h-2.5 rounded bg-rose-500 shrink-0" />
+                  {sectorConfig.donutNeg}:
                 </span>
                 <span className="text-rose-300 font-bold">
                   {dist.negative_change?.area_km2?.toFixed(1) || "270.4"} km² ({negPct.toFixed(1)}%)
@@ -326,8 +433,8 @@ export default function RadarGraphs({ analysis }: RadarGraphsProps) {
 
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-amber-400">
-                  <span className="w-2.5 h-2.5 rounded bg-amber-500" />
-                  Positive Backscatter:
+                  <span className="w-2.5 h-2.5 rounded bg-amber-500 shrink-0" />
+                  {sectorConfig.donutPos}:
                 </span>
                 <span className="text-amber-300 font-bold">
                   {dist.positive_change?.area_km2?.toFixed(1) || "116.0"} km² ({posPct.toFixed(1)}%)
@@ -336,8 +443,8 @@ export default function RadarGraphs({ analysis }: RadarGraphsProps) {
 
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-sky-400">
-                  <span className="w-2.5 h-2.5 rounded bg-sky-400" />
-                  Stable Terrain:
+                  <span className="w-2.5 h-2.5 rounded bg-sky-400 shrink-0" />
+                  {sectorConfig.donutStable}:
                 </span>
                 <span className="text-sky-300 font-bold">
                   {dist.stable?.area_km2?.toFixed(1) || "2952.4"} km² ({stablePct.toFixed(1)}%)
@@ -355,7 +462,7 @@ export default function RadarGraphs({ analysis }: RadarGraphsProps) {
         <div className="space-y-3">
           <div className="p-3 rounded-xl bg-space-950/90 border border-slate-800 space-y-3">
             <div className="text-[11px] font-mono text-slate-400 flex items-center justify-between">
-              <span>Empirical Percentile Distribution (dB)</span>
+              <span>{sectorConfig.metricChannel} Quantile Strip</span>
               <span className="text-sky-300">UTM 44N Calibrated</span>
             </div>
 
@@ -372,10 +479,7 @@ export default function RadarGraphs({ analysis }: RadarGraphsProps) {
                 style={{ left: "52%" }}
               />
               {/* Whisker P10 to P90 */}
-              <div
-                className="absolute h-0.5 bg-slate-400"
-                style={{ left: "18%", width: "70%" }}
-              />
+              <div className="absolute h-0.5 bg-slate-400" style={{ left: "18%", width: "70%" }} />
             </div>
 
             {/* Value Tiles */}
@@ -405,13 +509,10 @@ export default function RadarGraphs({ analysis }: RadarGraphsProps) {
         </div>
       )}
 
-      {/* Threshold Explanation Note */}
+      {/* Threshold Explanation Note (Directly tailored to this sector) */}
       <div className="p-3 rounded-xl bg-space-950/60 border border-slate-800 text-[11px] font-mono text-slate-400 flex items-start gap-2">
         <Info className="w-3.5 h-3.5 text-sky-400 mt-0.5 flex-shrink-0" />
-        <p className="leading-relaxed">
-          The <span className="text-white font-semibold">&plusmn;3.0 dB threshold</span> corresponds to a 2&times; doubling
-          or 0.5&times; halving of returned radar backscatter power, rigorously filtering radiometric speckle from significant terrain alteration.
-        </p>
+        <p className="leading-relaxed">{sectorConfig.thresholdDesc}</p>
       </div>
     </div>
   );

@@ -67,7 +67,8 @@ async def create_analysis(
             start_date=payload.start_date,
             end_date=payload.end_date,
             analysis_type=payload.analysis_type,
-            comparison_strategy=payload.comparison_strategy
+            comparison_strategy=payload.comparison_strategy,
+            location_name=location_name
         )
 
         return AnalysisResponse(
@@ -90,7 +91,10 @@ async def create_analysis(
             start_date=payload.start_date,
             end_date=payload.end_date,
             analysis_type=payload.analysis_type,
-            comparison_strategy=payload.comparison_strategy
+            comparison_strategy=payload.comparison_strategy,
+            location_name=location_name,
+            sector=payload.sector,
+            sector_name=payload.sector_name
         )
 
         return AnalysisResponse(
@@ -100,6 +104,9 @@ async def create_analysis(
             district=result_dict.get("district", resolved_district),
             location=location_ref,
             location_name=location_name,
+            sector=result_dict.get("sector", payload.sector),
+            sector_name=result_dict.get("sector_name", payload.sector_name),
+            analysis_type=result_dict.get("analysis_type", payload.analysis_type),
             requested_period=RequestedPeriod(start=payload.start_date, end=payload.end_date),
             observations_used=result_dict.get("observations_used", []),
             result=result_dict.get("result"),

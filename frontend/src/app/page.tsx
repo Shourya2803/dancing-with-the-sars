@@ -92,10 +92,10 @@ export default function HomePage() {
       {/* 6. Active Telemetry Analysis Stage */}
       {stage === "analyzing" && (
         <div className="relative w-full h-full flex items-center justify-center px-4">
-          <div className="absolute inset-0 z-0 opacity-25 blur-sm">
+          <div className="absolute inset-0 z-0 opacity-20 blur-md pointer-events-none">
             <UttarakhandMap showResultLayer={false} />
           </div>
-          <div className="relative z-10 w-full max-w-lg">
+          <div className="relative z-10 w-full max-w-3xl">
             <AnalysisProgress />
           </div>
         </div>
