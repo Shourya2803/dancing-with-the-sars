@@ -6,6 +6,8 @@ import UttarakhandMap from "@/components/map/UttarakhandMap";
 import AIExplanation from "./AIExplanation";
 import TechnicalDetails from "./TechnicalDetails";
 import InsufficientDataView from "./InsufficientDataView";
+import RadarGraphs from "./RadarGraphs";
+import Geological3DBlock from "./Geological3DBlock";
 import MethodologyModal from "@/components/navigation/MethodologyModal";
 import { soundController } from "@/lib/audio";
 import {
@@ -15,6 +17,8 @@ import {
   Maximize2,
   FileText,
   BarChart2,
+  BarChart3,
+  Box,
   ShieldCheck,
   Calendar,
   Layers,
@@ -23,7 +27,7 @@ import {
 
 export default function ResultDashboard() {
   const { analysisResult, setStage, selectedSector, currentLocationDetail, currentDistrictDetail } = useJourney();
-  const [activeTab, setActiveTab] = useState<"summary" | "technical">("summary");
+  const [activeTab, setActiveTab] = useState<"summary" | "graphs" | "geology" | "technical">("summary");
   const [isMethodologyOpen, setIsMethodologyOpen] = useState(false);
 
   // Handle Insufficient Data / Case B, C, D
@@ -90,44 +94,107 @@ export default function ResultDashboard() {
               {classification}
             </div>
           </div>
+
+          {/* Quick Visualization Switchers */}
+          <div className="flex items-center gap-1.5 pointer-events-auto">
+            <button
+              onClick={() => {
+                soundController.playPing(880, 0.05);
+                setActiveTab("geology");
+              }}
+              className="px-3 py-2.5 rounded-xl bg-space-900/95 border border-sky-500/40 hover:border-sky-400 text-sky-300 hover:text-white backdrop-blur-md shadow-xl text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Box className="w-3.5 h-3.5 text-amber-400" />
+              <span>3D Geology</span>
+            </button>
+            <button
+              onClick={() => {
+                soundController.playPing(880, 0.05);
+                setActiveTab("graphs");
+              }}
+              className="px-3 py-2.5 rounded-xl bg-space-900/95 border border-sky-500/40 hover:border-sky-400 text-sky-300 hover:text-white backdrop-blur-md shadow-xl text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <BarChart3 className="w-3.5 h-3.5 text-sky-400" />
+              <span>SAR Graphs</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Side Narrative & Explanation Drawer */}
-      <div className="w-full md:w-[440px] lg:w-[480px] h-[45vh] md:h-full bg-space-900/95 border-t md:border-t-0 md:border-l border-slate-800 p-5 overflow-y-auto backdrop-blur-2xl flex flex-col justify-between shadow-2xl z-20">
+      {/* Side Narrative & Visualization Drawer */}
+      <div className="w-full md:w-[480px] lg:w-[540px] h-[50vh] md:h-full bg-space-900/95 border-t md:border-t-0 md:border-l border-slate-800 p-5 overflow-y-auto backdrop-blur-2xl flex flex-col justify-between shadow-2xl z-20">
         <div className="space-y-4">
           {/* Header Action Row */}
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-            <div className="flex items-center gap-1.5 bg-space-950 p-1 rounded-xl border border-slate-800 text-xs font-mono">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
+            <div className="flex items-center gap-1 bg-space-950 p-1 rounded-xl border border-slate-800 text-[11px] font-mono overflow-x-auto">
               <button
-                onClick={() => setActiveTab("summary")}
-                className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                onClick={() => {
+                  soundController.playPing(880, 0.05);
+                  setActiveTab("summary");
+                }}
+                className={`px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
                   activeTab === "summary"
                     ? "bg-sky-500/20 text-sky-300 border border-sky-500/40 font-semibold"
                     : "text-slate-400 hover:text-slate-200"
                 }`}
               >
-                AI Summary
+                <Sparkles className="w-3 h-3" />
+                <span>AI Summary</span>
               </button>
+
               <button
-                onClick={() => setActiveTab("technical")}
-                className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                onClick={() => {
+                  soundController.playPing(880, 0.05);
+                  setActiveTab("graphs");
+                }}
+                className={`px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
+                  activeTab === "graphs"
+                    ? "bg-sky-500/20 text-sky-300 border border-sky-500/40 font-semibold"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <BarChart3 className="w-3 h-3" />
+                <span>SAR Graphs</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  soundController.playPing(880, 0.05);
+                  setActiveTab("geology");
+                }}
+                className={`px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
+                  activeTab === "geology"
+                    ? "bg-sky-500/20 text-sky-300 border border-sky-500/40 font-semibold"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <Box className="w-3 h-3" />
+                <span>3D Geology</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  soundController.playPing(880, 0.05);
+                  setActiveTab("technical");
+                }}
+                className={`px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
                   activeTab === "technical"
                     ? "bg-sky-500/20 text-sky-300 border border-sky-500/40 font-semibold"
                     : "text-slate-400 hover:text-slate-200"
                 }`}
               >
-                Technical / SAR
+                <Layers className="w-3 h-3" />
+                <span>Technical</span>
               </button>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 self-end sm:self-auto">
               <button
                 onClick={() => {
                   soundController.playPing(750, 0.08);
                   setIsMethodologyOpen(true);
                 }}
-                className="text-xs text-slate-400 hover:text-sky-300 font-mono flex items-center gap-1 px-2 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                className="text-[11px] text-slate-400 hover:text-sky-300 font-mono flex items-center gap-1 px-2 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
                 title="Scientific Methodology"
               >
                 <HelpCircle className="w-3.5 h-3.5" />
@@ -139,22 +206,32 @@ export default function ResultDashboard() {
                   soundController.playPing(750, 0.1);
                   setStage("uttarakhand");
                 }}
-                className="text-xs text-slate-400 hover:text-sky-300 font-mono flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                className="text-[11px] text-slate-400 hover:text-sky-300 font-mono flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>New Analysis</span>
+                <span>New</span>
               </button>
             </div>
           </div>
 
           {/* Active Tab Content */}
-          {activeTab === "summary" ? (
+          {activeTab === "summary" && (
             <AIExplanation
               explanationText={analysisResult?.explanation}
               limitations={result?.scientific_limitations}
             />
-          ) : (
-            analysisResult && <TechnicalDetails analysis={analysisResult} />
+          )}
+
+          {activeTab === "graphs" && analysisResult && (
+            <RadarGraphs analysis={analysisResult} />
+          )}
+
+          {activeTab === "geology" && (
+            <Geological3DBlock sectorId={selectedSector?.id} locationName={locationName} />
+          )}
+
+          {activeTab === "technical" && analysisResult && (
+            <TechnicalDetails analysis={analysisResult} />
           )}
         </div>
 
