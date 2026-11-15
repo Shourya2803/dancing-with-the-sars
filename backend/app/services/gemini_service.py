@@ -38,8 +38,8 @@ class GeminiService:
     """
 
     def __init__(self):
-        self.api_key = settings.GEMINI_API_KEY
-        self.model_name = settings.GEMINI_MODEL
+        self.api_key = (settings.GEMINI_API_KEY or "").strip()
+        self.model_name = (settings.GEMINI_MODEL or "gemini-3.5-flash").strip()
         self._client = None
 
         if GEMINI_AVAILABLE and self.api_key:
@@ -78,21 +78,18 @@ class GeminiService:
         if self._client:
             try:
                 prompt = (
-                    "Summarize the following verified radar analysis result for the end user in 2 to 3 clear, "
-                    "scientifically honest sentences without technical jargon:\n\n"
+                    "You are a NASA Earth Observation science communicator. "
+                    "Write a 2 to 3 sentence explanation of this radar backscatter measurement for end users:\n\n"
                     f"{json.dumps(summary_payload, indent=2)}\n\n"
-                    "Remember: Do not add facts that are not present in the supplied scientific result. "
-                    "Do not infer a specific disaster or event."
+                    "Absolute rules:\n"
+                    "1. Never claim unconfirmed disasters (such as landslides, deforestation, or floods).\n"
+                    "2. State the measured change area in km2 and percentage clearly.\n"
+                    "3. Mention that radar backscatter changes reflect physical variations in surface roughness, soil moisture, or vegetation geometry."
                 )
 
                 response = self._client.models.generate_content(
                     model=self.model_name,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        system_instruction=GEMINI_SYSTEM_INSTRUCTION,
-                        temperature=0.2, # Low temperature for strict factual adherence
-                        max_output_tokens=256
-                    )
+                    contents=prompt
                 )
                 if response and response.text:
                     return response.text.strip()
