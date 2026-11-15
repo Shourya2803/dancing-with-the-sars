@@ -6,9 +6,10 @@ Handles analysis creation, background scientific execution, polling, and results
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Query
 from typing import Dict, Any, Optional
 
-from app.schemas.api_schemas import AnalysisCreateRequest, AnalysisResponse, RequestedPeriod
+from app.schemas.api_schemas import AnalysisCreateRequest, AnalysisResponse, RequestedPeriod, LocationRef
 from app.services.processing_service import ProcessingService
 from app.services.db_service import db_service
+from app.data.uttarakhand_cities import get_city_info, find_city_by_name
 
 router = APIRouter(prefix="/analyses", tags=["Analyses"])
 proc_service = ProcessingService(db=db_service)
@@ -27,12 +28,29 @@ async def create_analysis(
             detail=f"start_date ({payload.start_date}) must be earlier than end_date ({payload.end_date})."
         )
 
+    # Resolve location if provided
+    resolved_district = payload.district
+    resolved_aoi = payload.aoi_geometry
+    location_ref = payload.location
+    location_name = None
+
+    if location_ref:
+        city_info = get_city_info(location_ref.id) or find_city_by_name(location_ref.name)
+        if city_info:
+            location_name = city_info["name"]
+            if not resolved_district:
+                resolved_district = city_info["district"]
+            if not resolved_aoi:
+                resolved_aoi = city_info["geometry"]
+        else:
+            location_name = location_ref.name
+
     # 1. Create analysis record in DB
     analysis_id = db_service.create_analysis(
         analysis_type=payload.analysis_type,
         region=payload.region,
-        district=payload.district,
-        aoi_geometry=payload.aoi_geometry,
+        district=resolved_district,
+        aoi_geometry=resolved_aoi,
         start_date=payload.start_date,
         end_date=payload.end_date,
         status="pending"
@@ -44,8 +62,8 @@ async def create_analysis(
             proc_service.execute_analysis,
             analysis_id=analysis_id,
             region=payload.region,
-            district=payload.district,
-            custom_aoi_geojson=payload.aoi_geometry,
+            district=resolved_district,
+            custom_aoi_geojson=resolved_aoi,
             start_date=payload.start_date,
             end_date=payload.end_date,
             analysis_type=payload.analysis_type,
@@ -56,7 +74,9 @@ async def create_analysis(
             analysis_id=analysis_id,
             status="pending",
             region=payload.region,
-            district=payload.district,
+            district=resolved_district,
+            location=location_ref,
+            location_name=location_name,
             requested_period=RequestedPeriod(start=payload.start_date, end=payload.end_date),
             message="Analysis queued for background scientific processing. Poll /analyses/{analysis_id} for status."
         )
@@ -65,8 +85,8 @@ async def create_analysis(
         result_dict = await proc_service.execute_analysis(
             analysis_id=analysis_id,
             region=payload.region,
-            district=payload.district,
-            custom_aoi_geojson=payload.aoi_geometry,
+            district=resolved_district,
+            custom_aoi_geojson=resolved_aoi,
             start_date=payload.start_date,
             end_date=payload.end_date,
             analysis_type=payload.analysis_type,
@@ -77,7 +97,9 @@ async def create_analysis(
             analysis_id=analysis_id,
             status=result_dict.get("status", "completed"),
             region=result_dict.get("region", payload.region),
-            district=result_dict.get("district", payload.district),
+            district=result_dict.get("district", resolved_district),
+            location=location_ref,
+            location_name=location_name,
             requested_period=RequestedPeriod(start=payload.start_date, end=payload.end_date),
             observations_used=result_dict.get("observations_used", []),
             result=result_dict.get("result"),

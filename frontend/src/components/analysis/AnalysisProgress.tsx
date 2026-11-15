@@ -5,12 +5,12 @@ import { useJourney } from "@/context/JourneyContext";
 import { Satellite, Radio, Cpu, CheckCircle2, ShieldAlert } from "lucide-react";
 
 export default function AnalysisProgress() {
-  const { analysisStep, currentDistrictDetail, selectedSector } = useJourney();
+  const { analysisStep, currentLocationDetail, currentDistrictDetail, selectedSector } = useJourney();
 
   const steps = [
     { title: "Querying CMR Granule Registry", desc: "Discovering NISAR Level-2 acquisitions" },
-    { title: "Verifying Orbital Geometry", desc: "Matching Track 106 / Frame 073 passes" },
-    { title: "Geocoded Matrix Slicing", desc: `Extracting ${currentDistrictDetail.name} AOI slice` },
+    { title: "Verifying Orbital Geometry", desc: `Matching Track ${currentLocationDetail.default_nisar_track} / Frame 0${currentLocationDetail.default_nisar_frame} passes` },
+    { title: "Geocoded Matrix Slicing", desc: `Extracting ${currentLocationDetail.name} AOI slice (${currentLocationDetail.elevation_m}m)` },
     { title: "Calibrated Differential Processing", desc: "Evaluating radar backscatter shifts (Δγ⁰)" },
     { title: "Synthesizing AI Plain-Language Report", desc: "Generating plain-language summary" },
   ];
@@ -37,11 +37,11 @@ export default function AnalysisProgress() {
         Earth Observation Analysis in Progress
       </div>
 
-      <h3 className="text-xl font-bold text-white mb-1">
-        Analyzing {currentDistrictDetail.name}
+      <h3 className="text-xl font-bold text-white mb-0.5">
+        Analyzing {currentLocationDetail.name}
       </h3>
       <p className="text-xs text-sky-300/80 font-mono mb-6">
-        Sector: {selectedSector.name} ({selectedSector.code})
+        {currentLocationDetail.district}, Uttarakhand • Sector: {selectedSector.name} ({selectedSector.code})
       </p>
 
       {/* Progress Telemetry Readout */}

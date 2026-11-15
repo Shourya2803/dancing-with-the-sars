@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 
 export default function ResultDashboard() {
-  const { analysisResult, setStage, selectedSector, currentDistrictDetail } = useJourney();
+  const { analysisResult, setStage, selectedSector, currentLocationDetail, currentDistrictDetail } = useJourney();
   const [activeTab, setActiveTab] = useState<"summary" | "technical">("summary");
 
   // Handle Insufficient Data / Case B, C, D
@@ -36,6 +36,7 @@ export default function ResultDashboard() {
   const changedArea = result?.changed_area_km2 ?? 14.8;
   const changePercentage = result?.change_percentage ?? 5.7;
   const classification = result?.classification ?? "Moderate Localized Surface Change";
+  const locationName = analysisResult?.location?.name || analysisResult?.location_name || currentLocationDetail.name;
 
   return (
     <div className="relative w-full h-full flex flex-col md:flex-row bg-space-950 overflow-hidden select-none">
@@ -52,11 +53,14 @@ export default function ResultDashboard() {
                 Verified Scientific Output • Level-2 GCOV
               </span>
             </div>
+            <div className="text-xs font-mono font-bold text-sky-400 uppercase tracking-widest mb-1">
+              {locationName} • Surface Change Analysis
+            </div>
             <h1 className="text-base sm:text-lg font-bold text-white leading-snug">
-              Measurable radar backscatter change detected in parts of {currentDistrictDetail.name}.
+              Measurable radar-derived change detected in {locationName} ({currentLocationDetail.district}, Uttarakhand).
             </h1>
             <p className="text-xs text-slate-300 mt-1 font-mono">
-              Sector: {selectedSector.name} • 12-day NISAR Repeat Pass
+              Sector: {selectedSector.name} • 12-day NISAR Repeat Pass • Elevation: {currentLocationDetail.elevation_m.toLocaleString()}m
             </p>
           </div>
         </div>

@@ -47,8 +47,15 @@ class MapArtifacts(BaseModel):
     geojson_url: Optional[str] = None
 
 
+class LocationRef(BaseModel):
+    id: str = Field(..., description="Unique city/area ID (e.g. 'joshimath')")
+    name: str = Field(..., description="Official name of the city or area (e.g. 'Joshimath')")
+    district: Optional[str] = Field(default=None, description="Parent district (e.g. 'Chamoli')")
+
+
 class AnalysisCreateRequest(BaseModel):
     region: str = Field(default="Uttarakhand", description="Target region (default: Uttarakhand)")
+    location: Optional[LocationRef] = Field(default=None, description="Selected city/area in Uttarakhand")
     district: Optional[str] = Field(default=None, description="Uttarakhand district name (e.g. 'Chamoli')")
     aoi_geometry: Optional[Dict[str, Any]] = Field(default=None, description="Custom GeoJSON Polygon or MultiPolygon")
     start_date: str = Field(..., description="Requested start date (YYYY-MM-DD)")
@@ -67,6 +74,8 @@ class AnalysisResponse(BaseModel):
     analysis_id: str
     status: str = Field(..., description="Current status: pending, searching, processing, storing, completed, failed, insufficient_data")
     region: str = "Uttarakhand"
+    location: Optional[LocationRef] = None
+    location_name: Optional[str] = None
     district: Optional[str] = None
     requested_period: RequestedPeriod
     observations_used: List[ObservationSummary] = []
@@ -100,6 +109,23 @@ class DistrictDetail(BaseModel):
     area_km2: float
     centroid: Dict[str, float]
     bbox: List[float]
+
+
+class LocationDetail(BaseModel):
+    id: str
+    name: str
+    district: str
+    division: str
+    latitude: float
+    longitude: float
+    elevation_m: float
+    description: str
+    bbox: List[float]
+    geometry: Dict[str, Any]
+    default_nisar_track: int = 106
+    default_nisar_frame: int = 73
+    mapX: float
+    mapY: float
 
 
 class HealthResponse(BaseModel):

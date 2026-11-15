@@ -1,8 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useJourney } from "@/context/JourneyContext";
-import { UTTARAKHAND_DISTRICTS, VERIFIED_NISAR_PASSES } from "@/lib/constants";
+import {
+  UTTARAKHAND_CITIES,
+  UTTARAKHAND_CITIES_LIST,
+  LocationDetail,
+} from "@/data/uttarakhand_cities";
 import { soundController } from "@/lib/audio";
 import {
   Calendar,
@@ -14,14 +18,18 @@ import {
   Layers,
   ChevronDown,
   Satellite,
+  Search,
+  Mountain,
+  Check,
+  X,
 } from "lucide-react";
 
 export default function AnalysisPanel() {
   const {
     selectedSector,
-    selectedDistrict,
-    setSelectedDistrict,
-    currentDistrictDetail,
+    selectedLocation,
+    setSelectedLocation,
+    currentLocationDetail,
     startDate,
     setStartDate,
     endDate,
@@ -36,10 +44,36 @@ export default function AnalysisPanel() {
   } = useJourney();
 
   const [showOrbitPresets, setShowOrbitPresets] = useState(false);
+  const [isCityDropdownOpen, setIsCityDropdownOpen] = useState(false);
+  const [citySearchTerm, setCitySearchTerm] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedDistrict(e.target.value);
-    soundController.playPing(750, 0.1);
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsCityDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredCities = UTTARAKHAND_CITIES_LIST.filter((city) => {
+    const term = citySearchTerm.toLowerCase().trim();
+    if (!term) return true;
+    return (
+      city.name.toLowerCase().includes(term) ||
+      city.district.toLowerCase().includes(term) ||
+      city.division.toLowerCase().includes(term)
+    );
+  });
+
+  const handleSelectCity = (city: LocationDetail) => {
+    setSelectedLocation(city.id);
+    setIsCityDropdownOpen(false);
+    setCitySearchTerm("");
+    soundController.playPing(880, 0.1);
   };
 
   const handleApplyPreset = (passStart: string, passEnd: string) => {
@@ -76,29 +110,124 @@ export default function AnalysisPanel() {
       </div>
 
       <div className="space-y-4">
-        {/* District Selector */}
-        <div>
-          <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-sky-400" />
-            <span>Target District / Area of Interest</span>
+        {/* City / Area Selector */}
+        <div className="relative" ref={dropdownRef}>
+          <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 mb-1.5 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-sky-400" />
+              <span>City / Area</span>
+            </div>
+            <span className="text-[10px] text-slate-400 font-normal">
+              Uttarakhand Only (36 Verified Locations)
+            </span>
           </label>
-          <div className="relative">
-            <select
-              value={selectedDistrict}
-              onChange={handleDistrictChange}
-              className="w-full appearance-none bg-space-950 border border-slate-700 hover:border-slate-600 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all font-sans cursor-pointer"
-            >
-              {Object.values(UTTARAKHAND_DISTRICTS).map((district) => (
-                <option key={district.id} value={district.id} className="bg-space-950 text-white">
-                  {district.name} ({district.division} Division • {district.area_km2.toLocaleString()} km²)
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+
+          {/* Trigger Button */}
+          <div
+            onClick={() => setIsCityDropdownOpen((prev) => !prev)}
+            className="w-full flex items-center justify-between bg-space-950 border border-slate-700 hover:border-sky-400/60 rounded-xl px-4 py-3 text-sm text-white focus:outline-none transition-all font-sans cursor-pointer shadow-inner"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-sky-400 shrink-0 animate-pulse" />
+              <div className="text-left">
+                <span className="font-semibold text-white">{currentLocationDetail.name}</span>
+                <span className="text-slate-400 text-xs ml-2">
+                  ({currentLocationDetail.district}, Uttarakhand)
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-emerald-400 hidden sm:inline flex items-center gap-1">
+                <Mountain className="w-3 h-3 inline" />
+                {currentLocationDetail.elevation_m.toLocaleString()}m
+              </span>
+              <ChevronDown
+                className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
+                  isCityDropdownOpen ? "rotate-180" : ""
+                }`}
+              />
+            </div>
           </div>
+
+          {/* Searchable Dropdown Popover */}
+          {isCityDropdownOpen && (
+            <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-space-950/95 border border-sky-500/40 rounded-2xl shadow-2xl backdrop-blur-2xl p-2.5 space-y-2 animate-in fade-in-0 zoom-in-95">
+              {/* Search Box */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="Search city or area..."
+                  value={citySearchTerm}
+                  onChange={(e) => setCitySearchTerm(e.target.value)}
+                  className="w-full bg-space-900 border border-slate-700 focus:border-sky-400 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-400 font-sans"
+                />
+                {citySearchTerm && (
+                  <button
+                    onClick={() => setCitySearchTerm("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              {/* City Results List */}
+              <div className="max-h-60 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                {filteredCities.length === 0 ? (
+                  <div className="p-3 text-center text-xs text-slate-400 font-mono">
+                    No verified locations matching "{citySearchTerm}".
+                  </div>
+                ) : (
+                  filteredCities.map((city) => {
+                    const isSelected = selectedLocation === city.id;
+                    return (
+                      <div
+                        key={city.id}
+                        onClick={() => handleSelectCity(city)}
+                        className={`flex items-center justify-between p-2 rounded-xl text-xs cursor-pointer transition-all ${
+                          isSelected
+                            ? "bg-sky-500/20 border border-sky-400 text-white font-medium shadow-sm"
+                            : "hover:bg-slate-800/80 border border-transparent text-slate-300 hover:text-white"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`w-2 h-2 rounded-full ${
+                              isSelected ? "bg-sky-400" : "bg-slate-600"
+                            }`}
+                          />
+                          <div>
+                            <div className="font-semibold text-white">{city.name}</div>
+                            <div className="text-[10px] text-slate-400">
+                              {city.district}, Uttarakhand
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono text-emerald-300">
+                            {city.elevation_m.toLocaleString()}m
+                          </span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-sky-400" />}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Location Footprint Meta */}
           <div className="flex justify-between items-center mt-1 text-[11px] text-slate-400 font-mono">
-            <span>Centroid: {currentDistrictDetail.centroid.lat}°N, {currentDistrictDetail.centroid.lon}°E</span>
-            <span>Primary Track: 106</span>
+            <span>
+              Coordinates: {currentLocationDetail.latitude.toFixed(4)}°N, {currentLocationDetail.longitude.toFixed(4)}°E
+            </span>
+            <span>
+              Primary Track: {currentLocationDetail.default_nisar_track} • Frame: 0{currentLocationDetail.default_nisar_frame}
+            </span>
           </div>
         </div>
 
@@ -228,17 +357,19 @@ export default function AnalysisPanel() {
             className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-semibold text-sm tracking-wide transition-all duration-300 shadow-[0_0_25px_rgba(14,165,233,0.35)] flex items-center justify-center gap-2 group disabled:opacity-50 cursor-pointer"
           >
             <Play className="w-4 h-4 fill-white group-hover:scale-110 transition-transform" />
-            <span>ANALYZE NISAR OBSERVATIONS</span>
+            <span>ANALYZE NISAR OBSERVATIONS FOR {currentLocationDetail.name.toUpperCase()}</span>
           </button>
 
           <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 mt-2 px-1">
             <span>
-              API Target:{" "}
+              Target AOI: {currentLocationDetail.name} ({currentLocationDetail.district}, UK)
+            </span>
+            <span>
               {backendOnline
-                ? "Live FastAPI Backend (http://localhost:8000)"
+                ? "Live FastAPI Backend"
                 : isMockMode
-                ? "Mock Mode Enabled (Offline Synthetic Data)"
-                : "Backend Offline (Will fallback to Mock Simulation)"}
+                ? "Mock Mode Enabled"
+                : "Backend Offline"}
             </span>
           </div>
         </div>

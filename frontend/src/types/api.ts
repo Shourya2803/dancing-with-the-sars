@@ -45,8 +45,15 @@ export interface MapArtifacts {
   geojson_url?: string;
 }
 
+export interface LocationReference {
+  id: string;
+  name: string;
+  district?: string;
+}
+
 export interface AnalysisCreateRequest {
   region: string;
+  location?: LocationReference;
   district?: string;
   aoi_geometry?: Record<string, any>;
   start_date: string;
@@ -59,6 +66,8 @@ export interface AnalysisResponse {
   analysis_id: string;
   status: "pending" | "searching" | "processing" | "storing" | "completed" | "failed" | "insufficient_data";
   region: string;
+  location?: LocationReference;
+  location_name?: string;
   district?: string;
   requested_period: RequestedPeriod;
   observations_used: ObservationSummary[];
@@ -101,6 +110,26 @@ export interface DistrictDetail {
     type: "Polygon" | "MultiPolygon";
     coordinates: number[][][] | number[][][][];
   };
+}
+
+export interface LocationDetail {
+  id: string;
+  name: string;
+  district: string;
+  division: string;
+  latitude: number;
+  longitude: number;
+  elevation_m: number;
+  description: string;
+  bbox: [number, number, number, number];
+  geometry: {
+    type: "Polygon";
+    coordinates: number[][][];
+  };
+  default_nisar_track: number;
+  default_nisar_frame: number;
+  mapX: number;
+  mapY: number;
 }
 
 export interface HealthResponse {

@@ -2,14 +2,18 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { JourneyStage, AnalysisSector } from "@/types/journey";
-import { AnalysisResponse, DistrictDetail } from "@/types/api";
+import { AnalysisResponse, DistrictDetail, LocationDetail } from "@/types/api";
 import { ANALYSIS_SECTORS, UTTARAKHAND_DISTRICTS } from "@/lib/constants";
+import { UTTARAKHAND_CITIES, DEFAULT_CITY_ID, getCityById } from "@/data/uttarakhand_cities";
 import { api } from "@/lib/api";
 import { soundController } from "@/lib/audio";
 
 interface JourneyContextType {
   stage: JourneyStage;
   setStage: (stage: JourneyStage) => void;
+  selectedLocation: string;
+  setSelectedLocation: (locationId: string) => void;
+  currentLocationDetail: LocationDetail;
   selectedDistrict: string;
   setSelectedDistrict: (districtId: string) => void;
   currentDistrictDetail: DistrictDetail;
@@ -60,7 +64,7 @@ export const STAGES_ORDER: JourneyStage[] = [
 
 export function JourneyProvider({ children }: { children: ReactNode }) {
   const [stage, setStage] = useState<JourneyStage>("space");
-  const [selectedDistrict, setSelectedDistrict] = useState<string>("chamoli");
+  const [selectedLocation, setSelectedLocation] = useState<string>(DEFAULT_CITY_ID);
   const [selectedSector, setSelectedSector] = useState<AnalysisSector>(ANALYSIS_SECTORS[0]);
   const [startDate, setStartDate] = useState<string>("2025-11-15");
   const [endDate, setEndDate] = useState<string>("2025-12-05");
@@ -107,7 +111,25 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
     setReducedMotion((prev) => !prev);
   };
 
-  const currentDistrictDetail = UTTARAKHAND_DISTRICTS[selectedDistrict] || UTTARAKHAND_DISTRICTS["chamoli"];
+  // Resolved Current Location
+  const currentLocationDetail: LocationDetail =
+    getCityById(selectedLocation) || UTTARAKHAND_CITIES[DEFAULT_CITY_ID];
+
+  // Backward compatibility: Derive district from selected city
+  const districtKey = currentLocationDetail.district.toLowerCase().replace(/\s+/g, "_");
+  const currentDistrictDetail =
+    UTTARAKHAND_DISTRICTS[districtKey] || UTTARAKHAND_DISTRICTS["chamoli"];
+
+  const setSelectedDistrict = (distId: string) => {
+    // When district is selected, find first matching city in that district
+    const normDist = distId.toLowerCase().replace(/_/g, " ");
+    const matchingCity = Object.values(UTTARAKHAND_CITIES).find(
+      (c) => c.district.toLowerCase() === normDist || c.id === distId
+    );
+    if (matchingCity) {
+      setSelectedLocation(matchingCity.id);
+    }
+  };
 
   const executeAnalysis = async () => {
     setIsAnalyzing(true);
@@ -119,18 +141,23 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
       setAnalysisStep("Querying NASA Earthdata CMR Granule Registry...");
       await new Promise((r) => setTimeout(r, 600));
 
-      setAnalysisStep("Evaluating Track 106 & Frame 073 Orbital Geometry...");
+      setAnalysisStep(`Evaluating Track ${currentLocationDetail.default_nisar_track} & Frame 0${currentLocationDetail.default_nisar_frame} Orbital Geometry...`);
       await new Promise((r) => setTimeout(r, 700));
 
-      setAnalysisStep("Slicing Geocoded RTC Backscatter Matrix (EPSG:32644)...");
+      setAnalysisStep(`Slicing Geocoded RTC Backscatter Matrix over ${currentLocationDetail.name} AOI...`);
       await new Promise((r) => setTimeout(r, 800));
 
       setAnalysisStep("Computing Calibrated Δγ⁰ Log-Ratio & Threshold Contours...");
 
       const payload = {
         region: "Uttarakhand",
-        district: currentDistrictDetail.name,
-        aoi_geometry: currentDistrictDetail.geometry,
+        location: {
+          id: currentLocationDetail.id,
+          name: currentLocationDetail.name,
+          district: currentLocationDetail.district,
+        },
+        district: currentLocationDetail.district,
+        aoi_geometry: currentLocationDetail.geometry,
         start_date: startDate,
         end_date: endDate,
         analysis_type: selectedSector.analysisType,
@@ -164,7 +191,10 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
       value={{
         stage,
         setStage,
-        selectedDistrict,
+        selectedLocation,
+        setSelectedLocation,
+        currentLocationDetail,
+        selectedDistrict: districtKey,
         setSelectedDistrict,
         currentDistrictDetail,
         selectedSector,

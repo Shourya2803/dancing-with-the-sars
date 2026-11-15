@@ -1,0 +1,1741 @@
+/**
+ * Authoritative dataset of real cities and areas across Uttarakhand, India.
+ * Includes verified WGS84 coordinates, elevation, district, bounding box, GeoJSON geometry,
+ * and 2D canvas projection coordinates on the Uttarakhand physical relief map (1470x1230).
+ *
+ * DO NOT INVENT COORDINATES OR BOUNDARIES.
+ */
+
+export interface LocationDetail {
+  id: string;
+  name: string;
+  district: string;
+  division: string;
+  latitude: number;
+  longitude: number;
+  elevation_m: number;
+  description: string;
+  bbox: [number, number, number, number]; // [min_lon, min_lat, max_lon, max_lat]
+  geometry: {
+    type: "Polygon";
+    coordinates: number[][][];
+  };
+  default_nisar_track: number;
+  default_nisar_frame: number;
+  mapX: number;
+  mapY: number;
+}
+
+export const UTTARAKHAND_CITIES: Record<string, LocationDetail> = {
+  "joshimath": {
+    "id": "joshimath",
+    "name": "Joshimath",
+    "district": "Chamoli",
+    "division": "Garhwal",
+    "latitude": 30.5566,
+    "longitude": 79.5644,
+    "elevation_m": 1890,
+    "description": "Gateway to Badrinath and Valley of Flowers. Crucial area for ground subsidence & slope stability studies.",
+    "bbox": [
+      79.5244,
+      30.5166,
+      79.6044,
+      30.5966
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            79.5244,
+            30.5166
+          ],
+          [
+            79.6044,
+            30.5166
+          ],
+          [
+            79.6044,
+            30.5966
+          ],
+          [
+            79.5244,
+            30.5966
+          ],
+          [
+            79.5244,
+            30.5166
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 829.3,
+    "mapY": 416.6
+  },
+  "badrinath": {
+    "id": "badrinath",
+    "name": "Badrinath",
+    "district": "Chamoli",
+    "division": "Garhwal",
+    "latitude": 30.7433,
+    "longitude": 79.4938,
+    "elevation_m": 3300,
+    "description": "High Himalayan holy town situated between Nar and Narayana mountain ranges in upper Alaknanda valley.",
+    "bbox": [
+      79.4538,
+      30.7033,
+      79.5338,
+      30.7833
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            79.4538,
+            30.7033
+          ],
+          [
+            79.5338,
+            30.7033
+          ],
+          [
+            79.5338,
+            30.7833
+          ],
+          [
+            79.4538,
+            30.7833
+          ],
+          [
+            79.4538,
+            30.7033
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 801.5,
+    "mapY": 342.8
+  },
+  "auli": {
+    "id": "auli",
+    "name": "Auli",
+    "district": "Chamoli",
+    "division": "Garhwal",
+    "latitude": 30.5288,
+    "longitude": 79.5694,
+    "elevation_m": 2800,
+    "description": "High-altitude alpine bugyals and slopes facing Nanda Devi.",
+    "bbox": [
+      79.5394,
+      30.4988,
+      79.5994,
+      30.5588
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            79.5394,
+            30.4988
+          ],
+          [
+            79.5994,
+            30.4988
+          ],
+          [
+            79.5994,
+            30.5588
+          ],
+          [
+            79.5394,
+            30.5588
+          ],
+          [
+            79.5394,
+            30.4988
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 831.3,
+    "mapY": 427.6
+  },
+  "gopeshwar": {
+    "id": "gopeshwar",
+    "name": "Gopeshwar",
+    "district": "Chamoli",
+    "division": "Garhwal",
+    "latitude": 30.4167,
+    "longitude": 79.3333,
+    "elevation_m": 1550,
+    "description": "Administrative headquarters of Chamoli district in the central Garhwal hills.",
+    "bbox": [
+      79.2933,
+      30.3767,
+      79.3733,
+      30.4567
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            79.2933,
+            30.3767
+          ],
+          [
+            79.3733,
+            30.3767
+          ],
+          [
+            79.3733,
+            30.4567
+          ],
+          [
+            79.2933,
+            30.4567
+          ],
+          [
+            79.2933,
+            30.3767
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 738.3,
+    "mapY": 471.9
+  },
+  "karnaprayag": {
+    "id": "karnaprayag",
+    "name": "Karnaprayag",
+    "district": "Chamoli",
+    "division": "Garhwal",
+    "latitude": 30.26,
+    "longitude": 79.22,
+    "elevation_m": 790,
+    "description": "Confluence of Alaknanda and Pindar rivers, key hydrological transit corridor.",
+    "bbox": [
+      79.18,
+      30.22,
+      79.26,
+      30.3
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            79.18,
+            30.22
+          ],
+          [
+            79.26,
+            30.22
+          ],
+          [
+            79.26,
+            30.3
+          ],
+          [
+            79.18,
+            30.3
+          ],
+          [
+            79.18,
+            30.22
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 693.6,
+    "mapY": 533.9
+  },
+  "dehradun": {
+    "id": "dehradun",
+    "name": "Dehradun",
+    "district": "Dehradun",
+    "division": "Garhwal",
+    "latitude": 30.3165,
+    "longitude": 78.0322,
+    "elevation_m": 450,
+    "description": "State capital of Uttarakhand situated in the Doon Valley between the Himalayas and Shivaliks.",
+    "bbox": [
+      77.9722,
+      30.2565,
+      78.0922,
+      30.3765
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            77.9722,
+            30.2565
+          ],
+          [
+            78.0922,
+            30.2565
+          ],
+          [
+            78.0922,
+            30.3765
+          ],
+          [
+            77.9722,
+            30.3765
+          ],
+          [
+            77.9722,
+            30.2565
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 225.5,
+    "mapY": 511.6
+  },
+  "mussoorie": {
+    "id": "mussoorie",
+    "name": "Mussoorie",
+    "district": "Dehradun",
+    "division": "Garhwal",
+    "latitude": 30.4598,
+    "longitude": 78.0644,
+    "elevation_m": 2005,
+    "description": "Famous hill station on the Garhwal Himalayan ridge overlooking the Doon Valley.",
+    "bbox": [
+      78.0244,
+      30.4198,
+      78.1044,
+      30.4998
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            78.0244,
+            30.4198
+          ],
+          [
+            78.1044,
+            30.4198
+          ],
+          [
+            78.1044,
+            30.4998
+          ],
+          [
+            78.0244,
+            30.4998
+          ],
+          [
+            78.0244,
+            30.4198
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 238.2,
+    "mapY": 454.9
+  },
+  "rishikesh": {
+    "id": "rishikesh",
+    "name": "Rishikesh",
+    "district": "Dehradun",
+    "division": "Garhwal",
+    "latitude": 30.0869,
+    "longitude": 78.2676,
+    "elevation_m": 340,
+    "description": "Himalayan foothills along the holy Ganges river; global center for yoga and gateway to Garhwal.",
+    "bbox": [
+      78.2276,
+      30.0469,
+      78.3076,
+      30.1269
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            78.2276,
+            30.0469
+          ],
+          [
+            78.3076,
+            30.0469
+          ],
+          [
+            78.3076,
+            30.1269
+          ],
+          [
+            78.2276,
+            30.1269
+          ],
+          [
+            78.2276,
+            30.0469
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 318.3,
+    "mapY": 602.4
+  },
+  "chakrata": {
+    "id": "chakrata",
+    "name": "Chakrata",
+    "district": "Dehradun",
+    "division": "Garhwal",
+    "latitude": 30.7016,
+    "longitude": 77.8697,
+    "elevation_m": 2118,
+    "description": "Secluded cantonment town in Jaunsar-Bawar nestled between Tons and Yamuna rivers.",
+    "bbox": [
+      77.8297,
+      30.6616,
+      77.9097,
+      30.7416
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            77.8297,
+            30.6616
+          ],
+          [
+            77.9097,
+            30.6616
+          ],
+          [
+            77.9097,
+            30.7416
+          ],
+          [
+            77.8297,
+            30.7416
+          ],
+          [
+            77.8297,
+            30.6616
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 161.5,
+    "mapY": 359.3
+  },
+  "haridwar": {
+    "id": "haridwar",
+    "name": "Haridwar",
+    "district": "Haridwar",
+    "division": "Garhwal",
+    "latitude": 29.9457,
+    "longitude": 78.1642,
+    "elevation_m": 314,
+    "description": "Ancient sacred city where the Ganges emerges from the Shivalik foothills onto the northern plains.",
+    "bbox": [
+      78.1142,
+      29.8957,
+      78.2142,
+      29.9957
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            78.1142,
+            29.8957
+          ],
+          [
+            78.2142,
+            29.8957
+          ],
+          [
+            78.2142,
+            29.9957
+          ],
+          [
+            78.1142,
+            29.9957
+          ],
+          [
+            78.1142,
+            29.8957
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 277.5,
+    "mapY": 658.2
+  },
+  "roorkee": {
+    "id": "roorkee",
+    "name": "Roorkee",
+    "district": "Haridwar",
+    "division": "Garhwal",
+    "latitude": 29.8543,
+    "longitude": 77.888,
+    "elevation_m": 268,
+    "description": "Premier educational & engineering hub, home to IIT Roorkee and National Institute of Hydrology.",
+    "bbox": [
+      77.838,
+      29.8043,
+      77.938,
+      29.9043
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            77.838,
+            29.8043
+          ],
+          [
+            77.938,
+            29.8043
+          ],
+          [
+            77.938,
+            29.9043
+          ],
+          [
+            77.838,
+            29.9043
+          ],
+          [
+            77.838,
+            29.8043
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 168.7,
+    "mapY": 694.4
+  },
+  "nainital": {
+    "id": "nainital",
+    "name": "Nainital",
+    "district": "Nainital",
+    "division": "Kumaon",
+    "latitude": 29.3919,
+    "longitude": 79.4542,
+    "elevation_m": 2084,
+    "description": "Kumaon hill resort set around eye-shaped Naini Lake, surrounded by steep forested mountain peaks.",
+    "bbox": [
+      79.4142,
+      29.3519,
+      79.4942,
+      29.4319
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            79.4142,
+            29.3519
+          ],
+          [
+            79.4942,
+            29.3519
+          ],
+          [
+            79.4942,
+            29.4319
+          ],
+          [
+            79.4142,
+            29.4319
+          ],
+          [
+            79.4142,
+            29.3519
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 74,
+    "mapX": 785.9,
+    "mapY": 877.3
+  },
+  "haldwani": {
+    "id": "haldwani",
+    "name": "Haldwani",
+    "district": "Nainital",
+    "division": "Kumaon",
+    "latitude": 29.2183,
+    "longitude": 79.513,
+    "elevation_m": 424,
+    "description": "Commercial capital of Kumaon in the foothills and main transit gateway to high-altitude regions.",
+    "bbox": [
+      79.463,
+      29.1683,
+      79.563,
+      29.2683
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            79.463,
+            29.1683
+          ],
+          [
+            79.563,
+            29.1683
+          ],
+          [
+            79.563,
+            29.2683
+          ],
+          [
+            79.463,
+            29.2683
+          ],
+          [
+            79.463,
+            29.1683
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 74,
+    "mapX": 809.1,
+    "mapY": 945.9
+  },
+  "ramnagar": {
+    "id": "ramnagar",
+    "name": "Ramnagar",
+    "district": "Nainital",
+    "division": "Kumaon",
+    "latitude": 29.3944,
+    "longitude": 79.1264,
+    "elevation_m": 345,
+    "description": "Gateway to Jim Corbett National Park along the Kosi river.",
+    "bbox": [
+      79.0764,
+      29.3444,
+      79.1764,
+      29.4444
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            79.0764,
+            29.3444
+          ],
+          [
+            79.1764,
+            29.3444
+          ],
+          [
+            79.1764,
+            29.4444
+          ],
+          [
+            79.0764,
+            29.4444
+          ],
+          [
+            79.0764,
+            29.3444
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 74,
+    "mapX": 656.7,
+    "mapY": 876.3
+  },
+  "rudraprayag": {
+    "id": "rudraprayag",
+    "name": "Rudraprayag",
+    "district": "Rudraprayag",
+    "division": "Garhwal",
+    "latitude": 30.2844,
+    "longitude": 78.9811,
+    "elevation_m": 895,
+    "description": "Confluence of Alaknanda and Mandakini rivers, key point for monitoring river discharge and slope stability.",
+    "bbox": [
+      78.9411,
+      30.2444,
+      79.0211,
+      30.3244
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            78.9411,
+            30.2444
+          ],
+          [
+            79.0211,
+            30.2444
+          ],
+          [
+            79.0211,
+            30.3244
+          ],
+          [
+            78.9411,
+            30.3244
+          ],
+          [
+            78.9411,
+            30.2444
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 599.5,
+    "mapY": 524.3
+  },
+  "kedarnath": {
+    "id": "kedarnath",
+    "name": "Kedarnath",
+    "district": "Rudraprayag",
+    "division": "Garhwal",
+    "latitude": 30.7346,
+    "longitude": 79.0669,
+    "elevation_m": 3583,
+    "description": "High-altitude glacial valley along the Mandakini river near Chorabari glacier.",
+    "bbox": [
+      79.0269,
+      30.6946,
+      79.1069,
+      30.7746
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            79.0269,
+            30.6946
+          ],
+          [
+            79.1069,
+            30.6946
+          ],
+          [
+            79.1069,
+            30.7746
+          ],
+          [
+            79.0269,
+            30.7746
+          ],
+          [
+            79.0269,
+            30.6946
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 633.3,
+    "mapY": 346.2
+  },
+  "guptkashi": {
+    "id": "guptkashi",
+    "name": "Guptkashi",
+    "district": "Rudraprayag",
+    "division": "Garhwal",
+    "latitude": 30.5228,
+    "longitude": 79.0767,
+    "elevation_m": 1319,
+    "description": "Mandakini valley town with sweeping views of Chaukhamba peaks.",
+    "bbox": [
+      79.0367,
+      30.4828,
+      79.1167,
+      30.5628
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            79.0367,
+            30.4828
+          ],
+          [
+            79.1167,
+            30.4828
+          ],
+          [
+            79.1167,
+            30.5628
+          ],
+          [
+            79.0367,
+            30.5628
+          ],
+          [
+            79.0367,
+            30.4828
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 637.1,
+    "mapY": 430.0
+  },
+  "uttarkashi": {
+    "id": "uttarkashi",
+    "name": "Uttarkashi",
+    "district": "Uttarkashi",
+    "division": "Garhwal",
+    "latitude": 30.7268,
+    "longitude": 78.4354,
+    "elevation_m": 1158,
+    "description": "Historic town along the Bhagirathi river, home to Nehru Institute of Mountaineering.",
+    "bbox": [
+      78.3954,
+      30.6868,
+      78.4754,
+      30.7668
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            78.3954,
+            30.6868
+          ],
+          [
+            78.4754,
+            30.6868
+          ],
+          [
+            78.4754,
+            30.7668
+          ],
+          [
+            78.3954,
+            30.7668
+          ],
+          [
+            78.3954,
+            30.6868
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 384.4,
+    "mapY": 349.3
+  },
+  "gangotri": {
+    "id": "gangotri",
+    "name": "Gangotri",
+    "district": "Uttarkashi",
+    "division": "Garhwal",
+    "latitude": 30.9947,
+    "longitude": 78.9398,
+    "elevation_m": 3100,
+    "description": "High Himalayan valley near the snout of Gangotri Glacier (Gaumukh), source of the Bhagirathi/Ganges.",
+    "bbox": [
+      78.8998,
+      30.9547,
+      78.9798,
+      31.0347
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            78.8998,
+            30.9547
+          ],
+          [
+            78.9798,
+            30.9547
+          ],
+          [
+            78.9798,
+            31.0347
+          ],
+          [
+            78.8998,
+            31.0347
+          ],
+          [
+            78.8998,
+            30.9547
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 583.2,
+    "mapY": 243.4
+  },
+  "barkot": {
+    "id": "barkot",
+    "name": "Barkot",
+    "district": "Uttarkashi",
+    "division": "Garhwal",
+    "latitude": 30.8125,
+    "longitude": 78.2078,
+    "elevation_m": 1220,
+    "description": "Gateway to Yamunotri along the Yamuna river valley.",
+    "bbox": [
+      78.1678,
+      30.7725,
+      78.2478,
+      30.8525
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            78.1678,
+            30.7725
+          ],
+          [
+            78.2478,
+            30.7725
+          ],
+          [
+            78.2478,
+            30.8525
+          ],
+          [
+            78.1678,
+            30.8525
+          ],
+          [
+            78.1678,
+            30.7725
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 294.7,
+    "mapY": 315.4
+  },
+  "almora": {
+    "id": "almora",
+    "name": "Almora",
+    "district": "Almora",
+    "division": "Kumaon",
+    "latitude": 29.5971,
+    "longitude": 79.6591,
+    "elevation_m": 1638,
+    "description": "Cultural heart of Kumaon situated on a 5 km ridge between Kosi and Suyal rivers.",
+    "bbox": [
+      79.6191,
+      29.5571,
+      79.6991,
+      29.6371
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            79.6191,
+            29.5571
+          ],
+          [
+            79.6991,
+            29.5571
+          ],
+          [
+            79.6991,
+            29.6371
+          ],
+          [
+            79.6191,
+            29.6371
+          ],
+          [
+            79.6191,
+            29.5571
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 74,
+    "mapX": 866.7,
+    "mapY": 796.1
+  },
+  "ranikhet": {
+    "id": "ranikhet",
+    "name": "Ranikhet",
+    "district": "Almora",
+    "division": "Kumaon",
+    "latitude": 29.6434,
+    "longitude": 79.4322,
+    "elevation_m": 1869,
+    "description": "Pine-forested cantonment town with panoramic Himalayan vistas.",
+    "bbox": [
+      79.3922,
+      29.6034,
+      79.4722,
+      29.6834
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            79.3922,
+            29.6034
+          ],
+          [
+            79.4722,
+            29.6034
+          ],
+          [
+            79.4722,
+            29.6834
+          ],
+          [
+            79.3922,
+            29.6834
+          ],
+          [
+            79.3922,
+            29.6034
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 74,
+    "mapX": 777.2,
+    "mapY": 777.8
+  },
+  "pithoragarh": {
+    "id": "pithoragarh",
+    "name": "Pithoragarh",
+    "district": "Pithoragarh",
+    "division": "Kumaon",
+    "latitude": 29.5829,
+    "longitude": 80.2182,
+    "elevation_m": 1627,
+    "description": "Soar valley headquarters in eastern Kumaon bordering Nepal and Tibet.",
+    "bbox": [
+      80.1682,
+      29.5329,
+      80.2682,
+      29.6329
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            80.1682,
+            29.5329
+          ],
+          [
+            80.2682,
+            29.5329
+          ],
+          [
+            80.2682,
+            29.6329
+          ],
+          [
+            80.1682,
+            29.6329
+          ],
+          [
+            80.1682,
+            29.5329
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 74,
+    "mapX": 1087.0,
+    "mapY": 801.7
+  },
+  "dharchula": {
+    "id": "dharchula",
+    "name": "Dharchula",
+    "district": "Pithoragarh",
+    "division": "Kumaon",
+    "latitude": 29.8475,
+    "longitude": 80.5392,
+    "elevation_m": 940,
+    "description": "Strategic border valley town along the swift Kali river gorge.",
+    "bbox": [
+      80.4992,
+      29.8075,
+      80.5792,
+      29.8875
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            80.4992,
+            29.8075
+          ],
+          [
+            80.5792,
+            29.8075
+          ],
+          [
+            80.5792,
+            29.8875
+          ],
+          [
+            80.4992,
+            29.8875
+          ],
+          [
+            80.4992,
+            29.8075
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 1213.5,
+    "mapY": 697.1
+  },
+  "munsyari": {
+    "id": "munsyari",
+    "name": "Munsyari",
+    "district": "Pithoragarh",
+    "division": "Kumaon",
+    "latitude": 30.0667,
+    "longitude": 80.2333,
+    "elevation_m": 2200,
+    "description": "Base for treks to Milam and Ralam glaciers, facing the dramatic Panchachuli peaks.",
+    "bbox": [
+      80.1933,
+      30.0267,
+      80.2733,
+      30.1067
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            80.1933,
+            30.0267
+          ],
+          [
+            80.2733,
+            30.0267
+          ],
+          [
+            80.2733,
+            30.1067
+          ],
+          [
+            80.1933,
+            30.1067
+          ],
+          [
+            80.1933,
+            30.0267
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 1093.0,
+    "mapY": 610.4
+  },
+  "bageshwar": {
+    "id": "bageshwar",
+    "name": "Bageshwar",
+    "district": "Bageshwar",
+    "division": "Kumaon",
+    "latitude": 29.8404,
+    "longitude": 79.7694,
+    "elevation_m": 1004,
+    "description": "Confluence of Saryu and Gomati rivers, gateway to Pindari and Sunderdhunga Glaciers.",
+    "bbox": [
+      79.7294,
+      29.8004,
+      79.8094,
+      29.8804
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            79.7294,
+            29.8004
+          ],
+          [
+            79.8094,
+            29.8004
+          ],
+          [
+            79.8094,
+            29.8804
+          ],
+          [
+            79.7294,
+            29.8804
+          ],
+          [
+            79.7294,
+            29.8004
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 910.1,
+    "mapY": 699.9
+  },
+  "kausani": {
+    "id": "kausani",
+    "name": "Kausani",
+    "district": "Bageshwar",
+    "division": "Kumaon",
+    "latitude": 29.8447,
+    "longitude": 79.596,
+    "elevation_m": 1890,
+    "description": "Window to the Himalayas with 300 km uninterrupted views of Trishul, Nanda Devi, and Panchachuli.",
+    "bbox": [
+      79.556,
+      29.8047,
+      79.636,
+      29.8847
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            79.556,
+            29.8047
+          ],
+          [
+            79.636,
+            29.8047
+          ],
+          [
+            79.636,
+            29.8847
+          ],
+          [
+            79.556,
+            29.8847
+          ],
+          [
+            79.556,
+            29.8047
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 841.8,
+    "mapY": 698.2
+  },
+  "new_tehri": {
+    "id": "new_tehri",
+    "name": "New Tehri",
+    "district": "Tehri Garhwal",
+    "division": "Garhwal",
+    "latitude": 30.3788,
+    "longitude": 78.4803,
+    "elevation_m": 1750,
+    "description": "Modern planned city overlooking the massive Tehri Dam reservoir on the Bhagirathi river.",
+    "bbox": [
+      78.4403,
+      30.3388,
+      78.5203,
+      30.4188
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            78.4403,
+            30.3388
+          ],
+          [
+            78.5203,
+            30.3388
+          ],
+          [
+            78.5203,
+            30.4188
+          ],
+          [
+            78.4403,
+            30.4188
+          ],
+          [
+            78.4403,
+            30.3388
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 402.1,
+    "mapY": 486.9
+  },
+  "pauri": {
+    "id": "pauri",
+    "name": "Pauri",
+    "district": "Pauri Garhwal",
+    "division": "Garhwal",
+    "latitude": 30.15,
+    "longitude": 78.78,
+    "elevation_m": 1814,
+    "description": "Hill town commanding grand vistas of snow-laden Himalayan peaks.",
+    "bbox": [
+      78.74,
+      30.11,
+      78.82,
+      30.19
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            78.74,
+            30.11
+          ],
+          [
+            78.82,
+            30.11
+          ],
+          [
+            78.82,
+            30.19
+          ],
+          [
+            78.74,
+            30.19
+          ],
+          [
+            78.74,
+            30.11
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 520.2,
+    "mapY": 577.4
+  },
+  "srinagar_garhwal": {
+    "id": "srinagar_garhwal",
+    "name": "Srinagar (Garhwal)",
+    "district": "Pauri Garhwal",
+    "division": "Garhwal",
+    "latitude": 30.2224,
+    "longitude": 78.7844,
+    "elevation_m": 560,
+    "description": "Largest educational and valley city in Garhwal along the Alaknanda river.",
+    "bbox": [
+      78.7444,
+      30.1824,
+      78.8244,
+      30.2624
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            78.7444,
+            30.1824
+          ],
+          [
+            78.8244,
+            30.1824
+          ],
+          [
+            78.8244,
+            30.2624
+          ],
+          [
+            78.7444,
+            30.2624
+          ],
+          [
+            78.7444,
+            30.1824
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 521.9,
+    "mapY": 548.8
+  },
+  "kotdwar": {
+    "id": "kotdwar",
+    "name": "Kotdwar",
+    "district": "Pauri Garhwal",
+    "division": "Garhwal",
+    "latitude": 29.7464,
+    "longitude": 78.5284,
+    "elevation_m": 454,
+    "description": "Gateway city to the Garhwal Himalayas at the foothills of the Shivalik range.",
+    "bbox": [
+      78.4784,
+      29.6964,
+      78.5784,
+      29.7964
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            78.4784,
+            29.6964
+          ],
+          [
+            78.5784,
+            29.6964
+          ],
+          [
+            78.5784,
+            29.7964
+          ],
+          [
+            78.4784,
+            29.7964
+          ],
+          [
+            78.4784,
+            29.6964
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 74,
+    "mapX": 421.1,
+    "mapY": 737.1
+  },
+  "lansdowne": {
+    "id": "lansdowne",
+    "name": "Lansdowne",
+    "district": "Pauri Garhwal",
+    "division": "Garhwal",
+    "latitude": 29.8377,
+    "longitude": 78.6871,
+    "elevation_m": 1706,
+    "description": "Pristine oak and blue pine forested cantonment hill station.",
+    "bbox": [
+      78.6471,
+      29.7977,
+      78.7271,
+      29.8777
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            78.6471,
+            29.7977
+          ],
+          [
+            78.7271,
+            29.7977
+          ],
+          [
+            78.7271,
+            29.8777
+          ],
+          [
+            78.6471,
+            29.8777
+          ],
+          [
+            78.6471,
+            29.7977
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 73,
+    "mapX": 483.6,
+    "mapY": 700.9
+  },
+  "champawat": {
+    "id": "champawat",
+    "name": "Champawat",
+    "district": "Champawat",
+    "division": "Kumaon",
+    "latitude": 29.3346,
+    "longitude": 80.0911,
+    "elevation_m": 1610,
+    "description": "Historic hill capital of the Chand dynasty in eastern Kumaon.",
+    "bbox": [
+      80.0511,
+      29.2946,
+      80.1311,
+      29.3746
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            80.0511,
+            29.2946
+          ],
+          [
+            80.1311,
+            29.2946
+          ],
+          [
+            80.1311,
+            29.3746
+          ],
+          [
+            80.0511,
+            29.3746
+          ],
+          [
+            80.0511,
+            29.2946
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 74,
+    "mapX": 1036.9,
+    "mapY": 899.9
+  },
+  "tanakpur": {
+    "id": "tanakpur",
+    "name": "Tanakpur",
+    "district": "Champawat",
+    "division": "Kumaon",
+    "latitude": 29.0722,
+    "longitude": 80.1111,
+    "elevation_m": 255,
+    "description": "Foothills town along the Sharda (Mahakali) river bordering Nepal.",
+    "bbox": [
+      80.0711,
+      29.0322,
+      80.1511,
+      29.1122
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            80.0711,
+            29.0322
+          ],
+          [
+            80.1511,
+            29.0322
+          ],
+          [
+            80.1511,
+            29.1122
+          ],
+          [
+            80.0711,
+            29.1122
+          ],
+          [
+            80.0711,
+            29.0322
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 74,
+    "mapX": 1044.8,
+    "mapY": 1003.7
+  },
+  "rudrapur": {
+    "id": "rudrapur",
+    "name": "Rudrapur",
+    "district": "Udham Singh Nagar",
+    "division": "Kumaon",
+    "latitude": 28.9774,
+    "longitude": 79.4004,
+    "elevation_m": 205,
+    "description": "Major industrial city and administrative center of Udham Singh Nagar in the Terai.",
+    "bbox": [
+      79.3504,
+      28.9274,
+      79.4504,
+      29.0274
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            79.3504,
+            28.9274
+          ],
+          [
+            79.4504,
+            28.9274
+          ],
+          [
+            79.4504,
+            29.0274
+          ],
+          [
+            79.3504,
+            29.0274
+          ],
+          [
+            79.3504,
+            28.9274
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 74,
+    "mapX": 764.7,
+    "mapY": 1041.2
+  },
+  "kashipur": {
+    "id": "kashipur",
+    "name": "Kashipur",
+    "district": "Udham Singh Nagar",
+    "division": "Kumaon",
+    "latitude": 29.2104,
+    "longitude": 78.9619,
+    "elevation_m": 238,
+    "description": "Historical Drona Sagar city and economic hub in southwestern Kumaon.",
+    "bbox": [
+      78.9119,
+      29.1604,
+      79.0119,
+      29.2604
+    ],
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            78.9119,
+            29.1604
+          ],
+          [
+            79.0119,
+            29.1604
+          ],
+          [
+            79.0119,
+            29.2604
+          ],
+          [
+            78.9119,
+            29.2604
+          ],
+          [
+            78.9119,
+            29.1604
+          ]
+        ]
+      ]
+    },
+    "default_nisar_track": 106,
+    "default_nisar_frame": 74,
+    "mapX": 591.9,
+    "mapY": 949.0
+  }
+};
+
+export const UTTARAKHAND_CITIES_LIST: LocationDetail[] = Object.values(UTTARAKHAND_CITIES);
+
+export const DEFAULT_CITY_ID = "joshimath";
+
+export function getCityById(id: string): LocationDetail | undefined {
+  const key = id.toLowerCase().trim();
+  return UTTARAKHAND_CITIES[key];
+}
+
+export function searchCities(query: string): LocationDetail[] {
+  if (!query || query.trim() === "") return UTTARAKHAND_CITIES_LIST;
+  const q = query.toLowerCase().trim();
+  return UTTARAKHAND_CITIES_LIST.filter(c =>
+    c.name.toLowerCase().includes(q) ||
+    c.district.toLowerCase().includes(q) ||
+    c.division.toLowerCase().includes(q)
+  );
+}

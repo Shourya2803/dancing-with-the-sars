@@ -71,9 +71,21 @@ export default function HomePage() {
       )}
 
       {/* 5. Uttarakhand Exploration & Telemetry Command Center Stage */}
-      {(stage === "uttarakhand" || stage === "sector_selected") && (
+      {stage === "uttarakhand" && (
         <div className="relative w-full h-full">
           <UttarakhandMap showResultLayer={false} />
+        </div>
+      )}
+
+      {/* 5b. Sector Selected / Parameter Panel Stage */}
+      {stage === "sector_selected" && (
+        <div className="relative w-full h-full flex items-center justify-center p-4">
+          <div className="absolute inset-0 z-0 opacity-30 blur-sm pointer-events-none">
+            <UttarakhandMap showResultLayer={false} />
+          </div>
+          <div className="relative z-10 w-full max-w-2xl">
+            <AnalysisPanel />
+          </div>
         </div>
       )}
 

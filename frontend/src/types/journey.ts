@@ -1,3 +1,7 @@
+import { LocationDetail } from "./api";
+
+export type { LocationDetail };
+
 export type JourneyStage =
   | "space"            // 1. Milky Way / Deep Space landing
   | "solar_system"     // 2. 3D Solar system navigation

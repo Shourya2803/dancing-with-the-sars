@@ -103,6 +103,8 @@ export class ApiClient {
       if (diffDays < 12) {
         return {
           ...MOCK_INSUFFICIENT_DATA_RESPONSE,
+          location: payload.location,
+          location_name: payload.location?.name,
           district: payload.district || "Chamoli",
           requested_period: {
             start: payload.start_date,
@@ -113,6 +115,8 @@ export class ApiClient {
 
       return {
         ...MOCK_ANALYSIS_CHAMOLI_SURFACE,
+        location: payload.location,
+        location_name: payload.location?.name,
         district: payload.district || "Chamoli",
         requested_period: {
           start: payload.start_date,
