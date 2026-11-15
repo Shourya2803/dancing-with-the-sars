@@ -3,8 +3,10 @@ Application Configuration and Settings.
 Uses Pydantic BaseSettings to load and validate environment variables with sensible defaults.
 """
 
+import json
 import os
-from typing import List, Optional
+from typing import Any, List, Optional
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,7 +18,33 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "production"
     
     # CORS
-    CORS_ORIGINS: List[str] = ["*"]
+    CORS_ORIGINS: Any = ["*"]
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: Any) -> List[str]:
+        if isinstance(v, list):
+            return [str(item).strip() for item in v if str(item).strip()]
+        if isinstance(v, str):
+            v = v.strip()
+            if not v or v in ("*", '""', "''", '["*"]'):
+                return ["*"]
+            if v.startswith("[") and v.endswith("]"):
+                try:
+                    parsed = json.loads(v)
+                    if isinstance(parsed, list):
+                        return [str(item).strip() for item in parsed if str(item).strip()]
+                except Exception:
+                    try:
+                        clean_v = v.replace("'", '"')
+                        parsed = json.loads(clean_v)
+                        if isinstance(parsed, list):
+                            return [str(item).strip() for item in parsed if str(item).strip()]
+                    except Exception:
+                        pass
+            origins = [o.strip() for o in v.split(",") if o.strip()]
+            return origins if origins else ["*"]
+        return ["*"]
 
     # NASA Earthdata / CMR Search Configuration
     NASA_CMR_SEARCH_URL: str = "https://cmr.earthdata.nasa.gov/search/granules.json"

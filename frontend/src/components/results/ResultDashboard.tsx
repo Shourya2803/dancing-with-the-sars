@@ -9,7 +9,6 @@ import TechnicalDetails from "./TechnicalDetails";
 import InsufficientDataView from "./InsufficientDataView";
 import RadarGraphs from "./RadarGraphs";
 import Geological3DBlock from "./Geological3DBlock";
-import MethodologyModal from "@/components/navigation/MethodologyModal";
 import { soundController } from "@/lib/audio";
 import {
   Sparkles,
@@ -23,13 +22,11 @@ import {
   ShieldCheck,
   Calendar,
   Layers,
-  HelpCircle,
 } from "lucide-react";
 
 export default function ResultDashboard() {
   const { analysisResult, setStage, selectedSector, currentLocationDetail, currentDistrictDetail } = useJourney();
   const [activeTab, setActiveTab] = useState<"summary" | "graphs" | "geology" | "technical">("summary");
-  const [isMethodologyOpen, setIsMethodologyOpen] = useState(false);
 
   // Handle Insufficient Data / Case B, C, D
   if (analysisResult?.status === "insufficient_data") {
@@ -206,18 +203,6 @@ export default function ResultDashboard() {
             <div className="flex items-center gap-2 self-end sm:self-auto">
               <button
                 onClick={() => {
-                  soundController.playPing(750, 0.08);
-                  setIsMethodologyOpen(true);
-                }}
-                className="text-[11px] text-slate-400 hover:text-sky-300 font-mono flex items-center gap-1 px-2 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
-                title="Scientific Methodology"
-              >
-                <HelpCircle className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Methodology</span>
-              </button>
-
-              <button
-                onClick={() => {
                   soundController.playPing(750, 0.1);
                   setStage("uttarakhand");
                 }}
@@ -266,11 +251,6 @@ export default function ResultDashboard() {
           </button>
         </div>
       </div>
-
-      <MethodologyModal
-        isOpen={isMethodologyOpen}
-        onClose={() => setIsMethodologyOpen(false)}
-      />
     </div>
   );
 }

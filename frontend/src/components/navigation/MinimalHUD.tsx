@@ -3,13 +3,11 @@
 import React, { useState } from "react";
 import { useJourney, STAGES_ORDER } from "@/context/JourneyContext";
 import { JourneyStage } from "@/types/journey";
-import MethodologyModal from "./MethodologyModal";
 import { soundController } from "@/lib/audio";
 import {
   Volume2,
   VolumeX,
   Orbit,
-  HelpCircle,
   Activity,
   Zap,
   Globe2,
@@ -32,8 +30,6 @@ export default function MinimalHUD() {
     toggleReducedMotion,
     replayGalaxyIntro,
   } = useJourney();
-
-  const [isMethodologyOpen, setIsMethodologyOpen] = useState(false);
 
   const stageLabels: Record<JourneyStage, { label: string; icon: React.ReactNode }> = {
     space: { label: "Space", icon: <Sparkles className="w-3 h-3" /> },
@@ -169,15 +165,6 @@ export default function MinimalHUD() {
               <VolumeX className="w-4 h-4" />
             )}
           </button>
-
-          {/* Methodology & Provenance Info */}
-          <button
-            onClick={() => setIsMethodologyOpen(true)}
-            className="px-3 py-1.5 rounded-xl bg-space-900/80 hover:bg-space-900 border border-slate-700/60 hover:border-slate-500 text-slate-300 hover:text-white backdrop-blur-md text-xs font-mono flex items-center gap-1.5 transition-all shadow-lg cursor-pointer"
-          >
-            <HelpCircle className="w-3.5 h-3.5 text-sky-400" />
-            <span className="hidden sm:inline">Methodology</span>
-          </button>
         </div>
       </header>
 
@@ -188,12 +175,6 @@ export default function MinimalHUD() {
           <span>DEVELOPMENT / MOCK DATA MODE — NOT REAL NISAR ANALYSIS</span>
         </div>
       )}
-
-      {/* Methodology Modal */}
-      <MethodologyModal
-        isOpen={isMethodologyOpen}
-        onClose={() => setIsMethodologyOpen(false)}
-      />
     </>
   );
 }
