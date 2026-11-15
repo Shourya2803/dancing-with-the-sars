@@ -90,7 +90,7 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
   // Check health on load
   useEffect(() => {
     api.checkHealth().then((health) => {
-      if (health && health.status === "healthy") {
+      if (health && (health.status === "ok" || health.status === "healthy")) {
         setBackendOnline(true);
       } else {
         setBackendOnline(false);

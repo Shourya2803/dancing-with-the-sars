@@ -9,7 +9,7 @@ import {
 import { UTTARAKHAND_DISTRICTS } from "@/lib/constants";
 import { MOCK_ANALYSIS_CHAMOLI_SURFACE, MOCK_INSUFFICIENT_DATA_RESPONSE } from "@/lib/mockData";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
 export class ApiClient {
   private baseUrl: string;
