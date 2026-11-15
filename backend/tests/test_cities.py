@@ -8,7 +8,7 @@ def test_list_and_get_cities():
     res = client.get("/api/v1/regions/uttarakhand/cities")
     assert res.status_code == 200
     cities = res.json()
-    assert len(cities) >= 30
+    assert len(cities) >= 70
 
     # Verify Joshimath is present with correct coordinates and elevation
     joshimath = next((c for c in cities if c["id"] == "joshimath"), None)
@@ -18,10 +18,28 @@ def test_list_and_get_cities():
     assert joshimath["elevation_m"] == 1890
     assert len(joshimath["geometry"]["coordinates"][0]) >= 5
 
+    # Verify Bhimtal is present
+    bhimtal = next((c for c in cities if c["id"] == "bhimtal"), None)
+    assert bhimtal is not None
+    assert bhimtal["name"] == "Bhimtal"
+    assert bhimtal["district"] == "Nainital"
+    assert bhimtal["elevation_m"] == 1370
+
+    # Verify Mukteshwar is present
+    mukteshwar = next((c for c in cities if c["id"] == "mukteshwar"), None)
+    assert mukteshwar is not None
+    assert mukteshwar["name"] == "Mukteshwar"
+    assert mukteshwar["district"] == "Nainital"
+    assert mukteshwar["elevation_m"] == 2171
+
     # Test single city retrieval
-    res_single = client.get("/api/v1/regions/uttarakhand/cities/joshimath")
-    assert res_single.status_code == 200
-    assert res_single.json()["name"] == "Joshimath"
+    res_bhimtal = client.get("/api/v1/regions/uttarakhand/cities/bhimtal")
+    assert res_bhimtal.status_code == 200
+    assert res_bhimtal.json()["name"] == "Bhimtal"
+
+    res_mukteshwar = client.get("/api/v1/regions/uttarakhand/cities/mukteshwar")
+    assert res_mukteshwar.status_code == 200
+    assert res_mukteshwar.json()["name"] == "Mukteshwar"
 
 def test_create_analysis_with_city_location():
     payload = {
