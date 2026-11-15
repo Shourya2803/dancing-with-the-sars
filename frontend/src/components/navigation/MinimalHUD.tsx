@@ -48,8 +48,8 @@ export default function MinimalHUD() {
 
   const currentStageIdx = STAGES_ORDER.indexOf(stage);
 
-  // Keep space and solar system views completely pure, cinematic, and text-free
-  if (stage === "space" || stage === "solar_system") {
+  // Keep space, solar system, earth, and india views completely pure, cinematic, and text-free
+  if (stage === "space" || stage === "solar_system" || stage === "earth" || stage === "india") {
     return null;
   }
 

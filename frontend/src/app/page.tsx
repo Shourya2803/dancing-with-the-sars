@@ -65,7 +65,7 @@ export default function HomePage() {
 
       {/* 4. India National Map Stage */}
       {stage === "india" && (
-        <div className="relative w-full h-full flex flex-col pt-16">
+        <div className="relative w-full h-full flex flex-col">
           <IndiaMap />
         </div>
       )}
